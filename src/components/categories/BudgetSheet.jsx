@@ -170,8 +170,8 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
               <div className="flex items-center gap-2.5">
                 {/* Radial gauge icon when budget is set, else static icon */}
                 {hasBudget && budgetNum > 0 ? (
-                  <div className="w-9 h-9 shrink-0 relative">
-                    <svg viewBox="0 0 36 36" className="w-9 h-9">
+                  <div className="w-10 h-10 shrink-0 relative">
+                    <svg viewBox="0 0 36 36" className="w-10 h-10">
                       <circle
                         cx="18" cy="18" r="15"
                         fill="none"
@@ -189,7 +189,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                         style={{ transition: 'stroke-dasharray 0.4s ease' }}
                       />
                     </svg>
-                    <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold tabular-nums text-ink">
+                    <span className="absolute inset-0 flex items-center justify-center text-[11px] font-bold tabular-nums tracking-tighter text-ink">
                       {Math.min(pct, 999)}%
                     </span>
                   </div>
@@ -199,7 +199,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                 <div className="flex-1 min-w-0">
                   <p className="text-[12px] font-semibold text-ink truncate">{cat.label}</p>
                   {cat.spent > 0 && (
-                    <p className="text-[10px] text-ink-3 tabular-nums">
+                    <p className="text-[11px] text-ink-3 tabular-nums">
                       Spent {fmt(cat.spent)}
                       {budgetNum > 0 && ` · ${pct}%`}
                     </p>
@@ -228,7 +228,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                       type="button"
                       onClick={() => handleSave(cat.id)}
                       disabled={isSaving}
-                      className="h-7 px-2 rounded-chip bg-brand text-white text-[10px] font-semibold
+                      className="h-7 px-2 rounded-chip bg-brand text-brand-on text-[11px] font-semibold
                                  disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
                     >
                       {isSaving ? '…' : 'Set'}
@@ -239,7 +239,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                       type="button"
                       onClick={() => handleDelete(cat.id)}
                       disabled={isSaving}
-                      className="h-7 px-2 rounded-chip bg-expense-bg text-expense-text text-[10px] font-semibold
+                      className="h-7 px-2 rounded-chip bg-expense-bg text-expense-text text-[11px] font-semibold
                                  disabled:opacity-50 active:scale-95 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)]"
                     >
                       {isSaving ? '…' : '×'}
@@ -263,7 +263,7 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                       style={{ width: `${Math.min(100, Math.max(0, pct))}%` }}
                     />
                   </div>
-                  <span className={`text-[9px] font-semibold shrink-0 ${
+                  <span className={`text-[11px] font-semibold shrink-0 ${
                     pct >= 100 ? 'text-expense-text' : pct >= 80 ? 'text-warning-text' : 'text-ink-3'
                   }`}>
                     {pct >= 100 ? 'Over budget' : pct >= 80 ? 'Near limit' : 'On track'}

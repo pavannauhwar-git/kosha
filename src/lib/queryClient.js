@@ -48,6 +48,7 @@ export const queryClient = new QueryClient({
       // FIX-007: refetchOnMount is disabled so tab switches never trigger a
       // refetch waterfall. Freshness is maintained by three mechanisms instead:
       //   1. refetchOnWindowFocus: true  — app returns from background → refresh
+      //      (families covered by GlobalRealtimeSync opt out; it refreshes them)
       //   2. refetchOnReconnect: 'always' — network drop + reconnect → refresh
       //   3. Realtime subscriptions + invalidateQueryFamilies — mutations → refresh
       //

@@ -610,7 +610,7 @@ export default function Monthly() {
                       <p className={`text-[12px] font-semibold ${item.tone === 'high' ? 'text-warning-text' : item.tone === 'watch' ? 'text-brand' : 'text-ink'}`}>
                         {item.title}
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-0.5 leading-relaxed">{item.message}</p>
+                      <p className="text-[11px] text-ink-3 mt-0.5 leading-relaxed">{item.message}</p>
                     </div>
                     <Button
                       variant={item.tone === 'high' ? 'primary' : 'secondary'}
@@ -659,7 +659,7 @@ export default function Monthly() {
             </div>
 
             <p className="text-[11px] text-ink-3">{monthCloseSummary.message}</p>
-            <p className="text-[10px] text-ink-3 mt-1.5">
+            <p className="text-[11px] text-ink-3 mt-1.5">
               {monthCloseSummary.confidenceLabel}: {monthCloseSummary.confidenceHint}
             </p>
 
@@ -697,14 +697,14 @@ export default function Monthly() {
             <div className="fade-up fade-up-6 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {categoryVelocitySignal && (
                 <div className="card p-3.5 border-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Highest category velocity</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Highest category velocity</p>
                   <p className="text-[14px] font-semibold text-ink mt-1 truncate" title={categoryVelocitySignal.label}>
                     {categoryVelocitySignal.label}
                   </p>
                   <p className={`text-[12px] mt-1 tabular-nums ${bandTextClass(categoryVelocitySignal.tone)}`}>
                     {categoryVelocitySignal.sharePct}% of spend · {fmt(categoryVelocitySignal.spend)}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     {fmt(categoryVelocitySignal.daily)} per day
                   </p>
                 </div>
@@ -712,14 +712,14 @@ export default function Monthly() {
 
               {budgetPressureSignal && (
                 <div className="card p-3.5 border-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Budget pressure</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Budget pressure</p>
                   <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(budgetPressureSignal.tone)}`}>
                     {budgetPressureSignal.tone === 'high' ? 'Overrun detected' : budgetPressureSignal.tone === 'watch' ? 'Near limit' : 'Within limits'}
                   </p>
                   <p className="text-[12px] text-ink-2 mt-1 truncate" title={budgetPressureSignal.top.label}>
                     {budgetPressureSignal.top.label}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     {budgetPressureSignal.top.utilization}% utilization · {budgetPressureSignal.overrunCount} overrun, {budgetPressureSignal.warningCount} warning
                   </p>
                 </div>
@@ -727,14 +727,14 @@ export default function Monthly() {
 
               {dailyVariabilitySignal && (
                 <div className="card p-3.5 border-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Daily variability</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Daily variability</p>
                   <p className={`text-[14px] font-semibold mt-1 ${bandTextClass(dailyVariabilitySignal.tone)}`}>
                     {dailyVariabilitySignal.tone === 'high' ? 'Chaotic pattern' : dailyVariabilitySignal.tone === 'watch' ? 'Volatile pattern' : 'Stable pattern'}
                   </p>
                   <p className="text-[12px] text-ink-2 mt-1 tabular-nums">
                     Avg {fmt(dailyVariabilitySignal.avg)} / day
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     CV {dailyVariabilitySignal.cvPct}% · {dailyVariabilitySignal.activeDays} active days
                   </p>
                 </div>

@@ -106,15 +106,15 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-income-bg/30 border border-income-border p-2">
-          <p className="text-[10px] text-ink-3">Early</p>
+          <p className="text-[11px] text-ink-3">Early</p>
           <p className="text-[13px] font-semibold text-income-text tabular-nums">{insights.earlyCount}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">On time</p>
+          <p className="text-[11px] text-ink-3">On time</p>
           <p className="text-[13px] font-semibold text-ink tabular-nums">{insights.onTimeCount}</p>
         </div>
         <div className={`rounded-card p-2 ${insights.lateEstimate > 0 ? 'bg-warning-bg/30 border border-warning-border' : 'bg-kosha-surface-2 border border-kosha-border'}`}>
-          <p className="text-[10px] text-ink-3">Late</p>
+          <p className="text-[11px] text-ink-3">Late</p>
           <p className={`text-[13px] font-semibold tabular-nums ${insights.lateEstimate > 0 ? 'text-warning-text' : 'text-ink'}`}>
             {insights.lateEstimate}
           </p>
@@ -146,7 +146,7 @@ export default memo(function BillPaymentInsights({ paidBills, pendingBills }) {
           </div>
         )}
       </div>
-      <div className="flex items-center gap-3 text-[10px] text-ink-3">
+      <div className="flex items-center gap-3 text-[11px] text-ink-3">
         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-income-text" /> Early</span>
         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-brand" /> On time</span>
         <span className="flex items-center gap-1"><span className="w-1.5 h-1.5 rounded-full bg-warning-text" /> Late</span>

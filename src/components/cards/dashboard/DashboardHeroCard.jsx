@@ -99,7 +99,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
     >
       {/* Top row — label + mode switch */}
       <div className="flex items-center justify-between mb-3.5 gap-2">
-        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase"
+        <p className="text-[11px] font-semibold tracking-[0.18em] uppercase"
           style={{ color: C.heroAccent }}>
           {heroMode === 'balance' ? 'Total balance' : `Safe to spend ${safeHorizonLabel}`.trim()}
         </p>
@@ -109,7 +109,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <button
             type="button"
             onClick={() => onSetHeroMode?.('balance')}
-            className={`h-6 px-2.5 rounded-pill text-[10px] font-semibold transition-colors ${heroMode === 'balance' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'balance' ? 'text-white' : 'text-white/70 hover:text-white'}`}
             style={heroMode === 'balance' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
           >
             Balance
@@ -117,7 +117,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <button
             type="button"
             onClick={() => onSetHeroMode?.('safe')}
-            className={`h-6 px-2.5 rounded-pill text-[10px] font-semibold transition-colors ${heroMode === 'safe' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'safe' ? 'text-white' : 'text-white/70 hover:text-white'}`}
             style={heroMode === 'safe' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
           >
             Safe
@@ -172,7 +172,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
               className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip fade-in"
               style={{ animationDelay: STAT_DELAYS[i] }}
             >
-              <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide"
+              <p className="text-[11px] mb-0.5 truncate tracking-wide"
                 style={{ color: C.heroLabel }}>{s.label}</p>
               <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>
                 {statText}

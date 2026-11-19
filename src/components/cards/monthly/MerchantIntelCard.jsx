@@ -93,7 +93,7 @@ export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses,
           <div key={m.key} className="rounded-card bg-kosha-surface-2 p-2.5">
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="flex items-center gap-2 min-w-0">
-                <span className="w-5 h-5 rounded-md bg-kosha-surface-2 flex items-center justify-center text-[10px] font-bold text-ink-3 shrink-0">
+                <span className="w-5 h-5 rounded-md bg-kosha-surface-2 flex items-center justify-center text-[11px] font-bold text-ink-3 shrink-0">
                   {index + 1}
                 </span>
                 <p className="text-[12px] font-semibold text-ink truncate">{m.displayName}</p>
@@ -104,7 +104,7 @@ export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses,
                   <button
                     type="button"
                     onClick={() => onReviewMerchant(m)}
-                    className="text-[10px] font-semibold text-brand hover:underline"
+                    className="text-[11px] font-semibold text-brand hover:underline"
                   >
                     Inspect
                   </button>
@@ -112,7 +112,7 @@ export default memo(function MerchantIntelCard({ txnRows = [], onReviewExpenses,
               </div>
             </div>
 
-            <div className="flex items-center gap-3 text-[10px] text-ink-3">
+            <div className="flex items-center gap-3 text-[11px] text-ink-3">
               <span>{m.count} transactions</span>
               <span>·</span>
               <span>Avg {fmt(m.avgTicket)}</span>

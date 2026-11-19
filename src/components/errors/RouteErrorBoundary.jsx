@@ -68,7 +68,7 @@ export class RouteErrorBoundary extends React.Component {
           <div className="flex items-center gap-2">
             <button
               onClick={this.handleRetry}
-              className="text-[13px] font-semibold px-4 py-2 rounded-pill bg-brand text-white"
+              className="text-[13px] font-semibold px-4 py-2 rounded-pill bg-brand text-brand-on"
             >
               Try again
             </button>

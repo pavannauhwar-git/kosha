@@ -611,19 +611,19 @@ export default function Reconciliation() {
         <div className="px-4 py-3.5">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] text-ink-3">Queue</p>
+              <p className="text-[11px] text-ink-3">Queue</p>
               <p className="text-[15px] font-semibold text-ink tabular-nums mt-1">{insights.counts.queue}</p>
             </div>
             <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] text-ink-3">Linked</p>
+              <p className="text-[11px] text-ink-3">Linked</p>
               <p className="text-[15px] font-semibold text-income-text tabular-nums mt-1">{reviewCounts.linked}</p>
             </div>
             <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] text-ink-3">No category</p>
+              <p className="text-[11px] text-ink-3">No category</p>
               <p className="text-[15px] font-semibold text-warning-text tabular-nums mt-1">{insights.counts.missingCategory}</p>
             </div>
             <div className="mini-panel px-3 py-2.5">
-              <p className="text-[10px] text-ink-3">Duplicates</p>
+              <p className="text-[11px] text-ink-3">Duplicates</p>
               <p className="text-[15px] font-semibold text-expense-text tabular-nums mt-1">{insights.counts.potentialDuplicate}</p>
             </div>
           </div>
@@ -676,7 +676,7 @@ export default function Reconciliation() {
             >
               {t.label}
               {t.count != null && (
-                <span className={`ml-1 text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                <span className={`ml-1 text-[11px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
                   {t.count}
                 </span>
               )}
@@ -704,7 +704,7 @@ export default function Reconciliation() {
                     className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
                   >
                     {chip.label}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
                       {count}
                     </span>
                   </motion.button>
@@ -727,7 +727,7 @@ export default function Reconciliation() {
                     className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
                   >
                     {chip.label}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                    <span className={`text-[11px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
                       {count}
                     </span>
                   </motion.button>
@@ -936,7 +936,7 @@ export default function Reconciliation() {
                 className={`rounded-card border mb-3 px-3 py-2.5 flex items-start gap-2 ${
                   driftMessage.severity === 'warning'
                     ? 'border-warning-border bg-warning-bg'
-                    : 'border-brand-border bg-brand-bg'
+                    : 'border-brand/20 bg-brand-bg'
                 }`}
               >
                 <Warning
@@ -1000,7 +1000,7 @@ export default function Reconciliation() {
                         className={`chip-control ${active ? 'chip-control-active' : 'chip-control-muted'}`}
                       >
                         {chip.label}
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-full tabular-nums ${active ? 'bg-black/10 text-current' : 'bg-kosha-surface-2 text-ink-3'}`}>
                           {statementRowsByFilter[chip.id].length}
                         </span>
                       </button>
@@ -1078,7 +1078,7 @@ export default function Reconciliation() {
                       <div key={alias.merchant} className="mini-panel px-2.5 py-1.5">
                         <div className="flex items-center justify-between gap-2">
                           <p className="text-[11px] text-ink-2 truncate">{alias.merchant}</p>
-                          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
+                          <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full whitespace-nowrap ${
                             alias.qualityScore >= 90 ? 'bg-income-bg text-income-text'
                             : alias.qualityScore >= 70 ? 'bg-kosha-surface-2 text-ink border border-kosha-border'
                             : 'bg-warning-bg text-warning-text'
@@ -1086,7 +1086,7 @@ export default function Reconciliation() {
                             {alias.qualityScore}%
                           </span>
                         </div>
-                        <p className="text-[10px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
+                        <p className="text-[11px] text-ink-4 mt-0.5">{alias.successCount} linked, {alias.rejectionCount} rejected</p>
                       </div>
                     ))}
                   </div>
@@ -1104,7 +1104,7 @@ export default function Reconciliation() {
                           inCooldown ? 'border-warning-border bg-warning-bg/10' : 'border-kosha-border bg-expense-bg/10'
                         }`}>
                           <p className={`text-[11px] truncate ${inCooldown ? 'text-warning-text' : 'text-expense-text'}`}>{merchant}</p>
-                          <p className="text-[10px] text-ink-4 mt-0.5">
+                          <p className="text-[11px] text-ink-4 mt-0.5">
                             {inCooldown
                               ? 'Cooldown active — paused for 14 days.'
                               : 'Cooldown completed — can be learned again.'}
@@ -1114,7 +1114,7 @@ export default function Reconciliation() {
                     })}
                   </div>
                   {demotedMerchants.size > 3 && (
-                    <p className="text-[10px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more</p>
+                    <p className="text-[11px] text-ink-4 mt-1.5">+{demotedMerchants.size - 3} more</p>
                   )}
                 </div>
               )}
@@ -1214,7 +1214,7 @@ function StatementMatchRow({ row, onOpen, onLink, onReject, linkedIdSet }) {
               initial={{ scale: 0.7, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: 'spring', stiffness: 420, damping: 18 }}
-              className="text-[10px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold"
+              className="text-[11px] px-1.5 py-0.5 rounded-full bg-income-bg text-income-text font-semibold"
             >
               ✓ Linked
             </motion.span>

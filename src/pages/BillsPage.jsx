@@ -55,7 +55,7 @@ export default function BillsPage() {
           aria-label="Add bill"
           onClick={() => setShowAdd(true)}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </motion.button>
       )}
       <PartnerViewBanner />

@@ -109,7 +109,7 @@ export default function ReconciliationOverviewPanel({
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
+                  tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
                   axisLine={false}
                   tickLine={false}
                 />

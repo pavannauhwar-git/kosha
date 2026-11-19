@@ -323,16 +323,16 @@ function adjustAggregatesForTransaction(txn, targetUserId, sign) {
 
 // ── Query hooks ───────────────────────────────────────────────────────────
 
-export function useTransactions({ type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, withCount = false, enabled = true, columns } = {}) {
+export function useTransactions({ type, category, vehicle, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, withCount = false, enabled = true, columns } = {}) {
   const targetUserId = useActiveWallet()
   const selectedColumns = columns || TRANSACTION_LIST_COLUMNS
-  const filters = { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, columns: selectedColumns }
+  const filters = { type, category, vehicle, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, columns: selectedColumns }
   const { data: rows, isLoading, isFetching, error, refetch } = useQuery({
     queryKey: txnListKey(filters, targetUserId),
     enabled: enabled && !!targetUserId,
     queryFn: ({ signal }) => traceQuery('transactions:list', async () => {
       try {
-        const { type, category, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId } = filters
+        const { type, category, vehicle, paymentMode, search, limit, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId } = filters
         const allUserIds = [targetUserId]
         
         // Background sync recurring only if we are viewing OUR OWN wallet
@@ -351,6 +351,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
 
         if (type)     q = q.eq('type', type)
         if (category) q = q.eq('category', category)
+        if (vehicle)  q = q.eq('investment_vehicle', vehicle)
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
         if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
         if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
@@ -388,7 +389,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
   const shouldFetchCount = enabled && withCount && (!hasLimit || safeRows.length >= numericLimit)
 
   const { data: countData } = useQuery({
-    queryKey: txnCountKey({ type, category, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId }, targetUserId),
+    queryKey: txnCountKey({ type, category, vehicle, paymentMode, search, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId }, targetUserId),
     enabled: shouldFetchCount,
     queryFn: () => traceQuery('transactions:count', async () => {
       try {
@@ -401,6 +402,7 @@ export function useTransactions({ type, category, paymentMode, search, limit, st
 
         if (type)       q = q.eq('type', type)
         if (category)   q = q.eq('category', category)
+        if (vehicle)    q = q.eq('investment_vehicle', vehicle)
         if (paymentMode) q = q.eq('payment_mode', paymentMode)
         if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
         if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
@@ -969,6 +971,7 @@ function matchesTransactionFilters(txn, filters = {}) {
 
   if (filters.type && txn.type !== filters.type) return false
   if (filters.category && txn.category !== filters.category) return false
+  if (filters.vehicle && txn.investment_vehicle !== filters.vehicle) return false
   if (filters.paymentMode && txn.payment_mode !== filters.paymentMode) return false
   if (filters.startDate && String(txn.date || '') < String(filters.startDate)) return false
   if (filters.endDate && String(txn.date || '') > String(filters.endDate)) return false

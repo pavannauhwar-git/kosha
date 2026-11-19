@@ -2,7 +2,6 @@ import { memo, useEffect, useMemo, useState, useRef } from 'react'
 import { hapticSelection } from '../../lib/haptics'
 import {
   BarChart, Bar,
-  AreaChart, Area,
   LineChart, Line,
   CartesianGrid,
   XAxis, YAxis, Tooltip, ReferenceLine,
@@ -26,71 +25,6 @@ function clampNumber(value, min, max) {
 function mean(values) {
   if (!values.length) return 0
   return values.reduce((sum, value) => sum + value, 0) / values.length
-}
-
-function standardDeviation(values, avg) {
-  if (values.length < 2) return 0
-  const variance = values.reduce((sum, value) => sum + ((value - avg) ** 2), 0) / values.length
-  return Math.sqrt(variance)
-}
-
-function computeVolatility(values) {
-  const clean = (Array.isArray(values) ? values : [])
-    .map(toFiniteNumber)
-    .filter((value) => value > 0)
-
-  if (clean.length < 2) {
-    return {
-      score: null,
-      cv: null,
-      mean: mean(clean),
-      sampleSize: clean.length,
-    }
-  }
-
-  const avg = mean(clean)
-  const deviation = standardDeviation(clean, avg)
-  const cv = avg > 0 ? deviation / avg : null
-  const score = clampNumber(Math.round(100 - ((cv || 0) * 95)), 0, 100)
-
-  return {
-    score,
-    cv,
-    mean: avg,
-    sampleSize: clean.length,
-  }
-}
-
-function scoreTone(score) {
-  if (score == null) {
-    return {
-      label: 'Insufficient data',
-      color: 'rgba(var(--ds-primary-rgb),0.72)',
-      fill: 'rgba(157,170,198,0.5)',
-    }
-  }
-
-  if (score >= 75) {
-    return {
-      label: 'Stable',
-      color: C.brand,
-      fill: C.brand,
-    }
-  }
-
-  if (score >= 50) {
-    return {
-      label: 'Moderate',
-      color: C.bills,
-      fill: C.accent,
-    }
-  }
-
-  return {
-    label: 'Volatile',
-    color: C.bills,
-    fill: C.bills,
-  }
 }
 
 // ── Tooltips ──────────────────────────────────────────────────────────────
@@ -178,42 +112,6 @@ const PulseTooltip = ({ active, payload, label }) => {
   )
 }
 
-const NetTooltip = ({ active, payload, label }) => {
-  const prevLabelRef = useRef(null)
-  useEffect(() => {
-    if (active && label !== prevLabelRef.current) {
-      throttledHaptic()
-      prevLabelRef.current = label
-    }
-  }, [active, label])
-
-  if (!active || !payload?.length) return null
-  const netPayload = payload.find((point) => point?.dataKey === 'Net') || payload[0]
-  const val        = Number(netPayload?.value || 0)
-  const valueColor = val >= 0 ? C.brandMid : C.bills
-  return (
-    <div className="tooltip-enter" style={{
-      background: 'var(--ds-surface)',
-      borderRadius: 12,
-      padding: '10px 14px',
-      boxShadow: 'var(--ds-shadow-md)',
-      minWidth: 140,
-      border: '1px solid var(--ds-border-strong)',
-    }}>
-      <p style={{
-        fontSize: 12, fontWeight: 500, color: 'var(--ds-text-3)',
-        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
-      }}>
-        {label}
-      </p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 13, color: 'var(--ds-text-1)' }}>Leftover</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{fmt(val)}</span>
-      </div>
-    </div>
-  )
-}
-
 // ── CashFlow chart ─────────────────────────────────────────────────────────
 
 export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncome }) {
@@ -271,31 +169,31 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
             }}>
             {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
           </p>
-          <p className="text-[10px] text-ink-3 mt-1">net pulse</p>
+          <p className="text-[11px] text-ink-3 mt-1">net pulse</p>
         </div>
       </div>
 
       <div className="mb-3 grid grid-cols-2 md:grid-cols-5 gap-2">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Income</p>
+          <p className="text-[11px] text-ink-3">Income</p>
           <p className="text-[13px] font-semibold tabular-nums text-income-text">{fmt(totalIncome || totalIncomeSafe, true)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Outflow</p>
+          <p className="text-[11px] text-ink-3">Outflow</p>
           <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(totalOutflow, true)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Investment</p>
+          <p className="text-[11px] text-ink-3">Investment</p>
           <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalInvested, true)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Positive months</p>
+          <p className="text-[11px] text-ink-3">Positive months</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">
             {pulseMonths.active ? `${pulseMonths.positive}/${pulseMonths.active}` : '—'}
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Spend velocity</p>
+          <p className="text-[11px] text-ink-3">Spend velocity</p>
           <p className={`text-[13px] font-semibold tabular-nums ${spendVelocity == null ? 'text-ink-3' : spendVelocity <= 85 ? 'text-income-text' : 'text-warning-text'}`}>
             {spendVelocity == null ? '—' : `${spendVelocity}%`}
           </p>
@@ -340,232 +238,6 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
               style={{ background: c, borderColor: c === C.accent ? 'rgba(0,0,0,0.1)' : 'transparent' }} 
             />
             <span className="text-[11px] text-ink-3 font-medium">{l}</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-})
-
-// ── NetSavings chart ───────────────────────────────────────────────────────
-
-export const NetSavingsChart = memo(function NetSavingsChart({ netData, netAxisMax }) {
-  const safeData = useMemo(() => (Array.isArray(netData) ? netData : []).map((point) => ({
-    name: point?.name || '-',
-    Net: toFiniteNumber(point?.Net),
-  })), [netData])
-
-  if (!safeData.length) return null
-
-  const safeAxisMax = Math.max(1000, toFiniteNumber(netAxisMax))
-
-  const totalNet = safeData.reduce((s, m) => s + toFiniteNumber(m.Net), 0)
-  const positiveMonths = safeData.filter((m) => toFiniteNumber(m.Net) >= 0).length
-  const bestMonth = safeData.reduce((best, point) => {
-    const val = toFiniteNumber(point.Net)
-    if (!best || val > best.value) return { name: point.name, value: val }
-    return best
-  }, null)
-  const worstMonth = safeData.reduce((worst, point) => {
-    const val = toFiniteNumber(point.Net)
-    if (!worst || val < worst.value) return { name: point.name, value: val }
-    return worst
-  }, null)
-
-  return (
-    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-label font-semibold text-ink">
-            Leftover / Surplus
-          </p>
-          <p className="text-[11px] text-ink-3 mt-0.5">
-            Income minus expenses and investments
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="font-semibold tabular-nums" style={{
-            fontSize: 15,
-            color: totalNet >= 0 ? C.brand : C.bills,
-            letterSpacing: '-0.01em',
-          }}>
-            {totalNet >= 0 ? '+' : '-'}{fmt(Math.abs(totalNet), true)}
-          </p>
-          <p className="text-[10px] text-ink-3 mt-1">
-            {totalNet >= 0 ? 'year surplus' : 'year deficit'}
-          </p>
-        </div>
-      </div>
-
-      <div className="mb-3 grid grid-cols-3 gap-2">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Positive months</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{positiveMonths}/{netData.length}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Highest surplus</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{bestMonth?.name || '—'}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Deepest deficit</p>
-          <p className="text-[13px] font-semibold tabular-nums text-warning-text">{worstMonth?.name || '—'}</p>
-        </div>
-      </div>
-
-      <ResponsiveContainer width="100%" height={180}>
-        <BarChart data={safeData} margin={{ top: 4, right: 12, left: 12, bottom: 0 }}>
-          <XAxis dataKey="name"
-            tick={{ fontSize: 11, fill: 'var(--ds-text-tertiary)', fontWeight: 500 }}
-            axisLine={false} tickLine={false} interval={0}
-          />
-          <YAxis hide domain={[-safeAxisMax, safeAxisMax]} />
-          <Tooltip content={<NetTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
-          <ReferenceLine y={0} stroke="rgba(var(--ds-text-rgb),0.22)" strokeWidth={1} />
-          <Bar dataKey="Net" radius={[8, 8, 8, 8]} maxBarSize={26}>
-            {safeData.map((entry, i) => (
-              <Cell key={i}
-                fill={entry.Net >= 0 ? C.brandMid : C.accent}
-                fillOpacity={0.90}
-              />
-            ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <div className="flex justify-center gap-6 pt-2">
-        {[['Surplus', C.brandMid], ['Deficit', C.accent]].map(([label, color]) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div 
-              className="w-2 h-2 rounded-full border border-black/5" 
-              style={{ background: color, borderColor: color === C.accent ? 'rgba(0,0,0,0.1)' : 'transparent' }} 
-            />
-            <span className="text-[11px] text-ink-3">{label}</span>
-          </div>
-        ))}
-      </div>
-      <div className="pt-2 text-[11px] text-ink-3">Monthly leftover after expenses and investments.</div>
-    </div>
-  )
-})
-
-const FlowCompareTooltip = ({ active, payload, label }) => {
-  const prevLabelRef = useRef(null)
-  useEffect(() => {
-    if (active && label !== prevLabelRef.current) {
-      hapticSelection()
-      prevLabelRef.current = label
-    }
-  }, [active, label])
-
-  if (!active || !payload?.length) return null
-  const point = payload[0]?.payload || {}
-
-  return (
-    <div className="tooltip-enter" style={{
-      background: 'var(--ds-surface)',
-      borderRadius: 12,
-      padding: '10px 12px',
-      boxShadow: 'var(--ds-shadow-md)',
-      minWidth: 170,
-      border: '1px solid var(--ds-border-strong)',
-    }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-        {label}
-      </p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Income</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(point?.Income || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Expense</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(point?.Spent || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Investment</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(point?.Invested || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 14 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Outflow</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.ink }}>{fmt(point?.Outflow || 0)}</span>
-      </div>
-    </div>
-  )
-}
-
-export const MoneyFlowComparisonChart = memo(function MoneyFlowComparisonChart({ flowData }) {
-  const safeData = useMemo(() => (Array.isArray(flowData) ? flowData : []).map((point) => {
-    const income = toFiniteNumber(point?.Income)
-    const spent = toFiniteNumber(point?.Spent)
-    const invested = toFiniteNumber(point?.Invested)
-    return {
-      name: point?.name || '-',
-      Income: income,
-      Spent: spent,
-      Invested: invested,
-      Outflow: spent + invested,
-    }
-  }), [flowData])
-
-  if (!safeData.length) return null
-
-  const totalIncome = safeData.reduce((sum, row) => sum + row.Income, 0)
-  const totalExpense = safeData.reduce((sum, row) => sum + row.Spent, 0)
-  const totalInvestment = safeData.reduce((sum, row) => sum + row.Invested, 0)
-  const totalOutflow = totalExpense + totalInvestment
-  const deploymentRate = totalIncome > 0 ? Math.round((totalInvestment / totalIncome) * 100) : 0
-
-  return (
-    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-label font-semibold text-ink">Money Flow Comparison</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Month by month: income, expenses, and investments side by side.</p>
-        </div>
-        <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border">
-          Invest rate {deploymentRate}%
-        </span>
-      </div>
-
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Income</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(totalIncome, true)}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Expense</p>
-          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(totalExpense, true)}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Investment</p>
-          <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(totalInvestment, true)}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Total outflow</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(totalOutflow, true)}</p>
-        </div>
-      </div>
-
-      <ResponsiveContainer width="100%" height={230}>
-        <BarChart data={safeData} margin={{ top: 6, right: 12, left: 12, bottom: 0 }}>
-          <XAxis
-            dataKey="name"
-            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
-            axisLine={false}
-            tickLine={false}
-            interval={0}
-          />
-          <YAxis hide />
-          <Tooltip content={<FlowCompareTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
-          <Bar dataKey="Income" fill={C.brand} radius={[6, 6, 0, 0]} maxBarSize={18} />
-          <Bar dataKey="Spent" fill={C.chartExpense} radius={[6, 6, 0, 0]} maxBarSize={18} />
-          <Bar dataKey="Invested" fill={C.invest} radius={[6, 6, 0, 0]} maxBarSize={18} />
-        </BarChart>
-      </ResponsiveContainer>
-
-      <div className="flex justify-center gap-6 pt-1">
-        {[['Income', C.brand], ['Expense', C.chartExpense], ['Investment', C.invest]].map(([label, color]) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-            <span className="text-[11px] text-ink-3">{label}</span>
           </div>
         ))}
       </div>
@@ -756,151 +428,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
         </BarChart>
       </ResponsiveContainer>
 
-      <p className="text-[10px] text-ink-3 pt-1.5">{periodLabel} view: spot whether pressure is coming from expense drift or investment pace.</p>
-    </div>
-  )
-})
-
-const CompositionTooltip = ({ active, payload, label }) => {
-  const prevLabelRef = useRef(null)
-  useEffect(() => {
-    if (active && label !== prevLabelRef.current) {
-      hapticSelection()
-      prevLabelRef.current = label
-    }
-  }, [active, label])
-
-  if (!active || !payload?.length) return null
-  const row = payload[0]?.payload || {}
-
-  return (
-    <div className="tooltip-enter" style={{
-      background: 'var(--ds-surface)',
-      borderRadius: 12,
-      padding: '10px 12px',
-      boxShadow: 'var(--ds-shadow-md)',
-      border: '1px solid var(--ds-border-strong)',
-      minWidth: 182,
-    }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
-        {label}
-      </p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Expense</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.chartExpense }}>{fmt(row?.Spent || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Investment</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.invest }}>{fmt(row?.Invested || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 3 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Outflow</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ds-text-1)' }}>{fmt(row?.Outflow || 0)}</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: 12, color: 'var(--ds-text-3)' }}>Income</span>
-        <span style={{ fontSize: 12, fontWeight: 700, color: C.brand }}>{fmt(row?.Income || 0)}</span>
-      </div>
-    </div>
-  )
-}
-
-export const MonthlyCompositionAreaChart = memo(function MonthlyCompositionAreaChart({ flowData }) {
-  const safeData = useMemo(() => (Array.isArray(flowData) ? flowData : []).map((row) => {
-    const expense = toFiniteNumber(row?.Spent)
-    const investment = toFiniteNumber(row?.Invested)
-    return {
-      name: row?.name || '-',
-      Income: toFiniteNumber(row?.Income),
-      Spent: expense,
-      Invested: investment,
-      Outflow: expense + investment,
-      InvestShare: expense + investment > 0 ? Math.round((investment / (expense + investment)) * 100) : 0,
-    }
-  }), [flowData])
-
-  if (!safeData.length) return null
-
-  const highestOutflow = safeData.reduce((best, row) => (best == null || row.Outflow > best.Outflow ? row : best), null)
-  const avgOutflow = Math.round(mean(safeData.map((row) => row.Outflow)))
-  const avgInvestShare = Math.round(mean(safeData.map((row) => row.InvestShare)))
-
-  return (
-    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-label font-semibold text-ink">Outflow composition trend</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Stacked monthly outflow split into expense and investment, with income trend on top.</p>
-        </div>
-        <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink border border-kosha-border">
-          Avg invest share {avgInvestShare}%
-        </span>
-      </div>
-
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Peak outflow</p>
-          <p className="text-[13px] font-semibold tabular-nums text-warning-text">{highestOutflow?.name || '—'}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Avg outflow</p>
-          <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(avgOutflow, true)}</p>
-        </div>
-        <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Peak amount</p>
-          <p className="text-[13px] font-semibold tabular-nums text-expense-text">{fmt(highestOutflow?.Outflow || 0, true)}</p>
-        </div>
-      </div>
-
-      <ResponsiveContainer width="100%" height={228}>
-        <AreaChart data={safeData} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
-          <XAxis
-            dataKey="name"
-            tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
-            axisLine={false}
-            tickLine={false}
-            interval={0}
-          />
-          <YAxis hide />
-          <Tooltip content={<CompositionTooltip />} cursor={{ stroke: 'rgba(var(--ds-primary-rgb),0.15)', strokeWidth: 1 }} />
-          <Area
-            type="monotone"
-            dataKey="Spent"
-            stackId="outflow"
-            stroke={C.chartExpense}
-            fill={C.chartExpense}
-            fillOpacity={0.42}
-            strokeWidth={1.8}
-          />
-          <Area
-            type="monotone"
-            dataKey="Invested"
-            stackId="outflow"
-            stroke={C.invest}
-            fill={C.invest}
-            fillOpacity={0.5}
-            strokeWidth={1.8}
-          />
-          <Line
-            type="monotone"
-            dataKey="Income"
-            stroke={C.brand}
-            strokeWidth={2.3}
-            dot={false}
-            activeDot={{ r: 4, fill: C.brand, stroke: '#fff', strokeWidth: 2 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-
-      <div className="flex justify-center gap-6 pt-1">
-        {[['Expense', C.chartExpense], ['Investment', C.invest], ['Income', C.brand]].map(([label, color]) => (
-          <div key={label} className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full" style={{ background: color }} />
-            <span className="text-[11px] text-ink-3">{label}</span>
-          </div>
-        ))}
-      </div>
+      <p className="text-[11px] text-ink-3 pt-1.5">{periodLabel} view: spot whether pressure is coming from expense drift or investment pace.</p>
     </div>
   )
 })
@@ -969,17 +497,17 @@ export const SurplusTrajectoryChart = memo(function SurplusTrajectoryChart({ net
 
       <div className="grid grid-cols-3 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Year-end</p>
+          <p className="text-[11px] text-ink-3">Year-end</p>
           <p className={`text-[13px] font-semibold tabular-nums ${latest >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
             {latest >= 0 ? '+' : '-'}{fmt(Math.abs(latest), true)}
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Peak month</p>
+          <p className="text-[11px] text-ink-3">Peak month</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{peak?.name || '—'}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Low point</p>
+          <p className="text-[11px] text-ink-3">Low point</p>
           <p className="text-[13px] font-semibold tabular-nums text-warning-text">{trough?.name || '—'}</p>
         </div>
       </div>
@@ -1079,7 +607,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3 mb-1">Category</p>
+              <p className="text-[11px] uppercase tracking-[0.06em] text-ink-3 mb-1">Category</p>
               <Select
                 name="whatif-category"
                 value={selectedCategory?.id || ''}
@@ -1093,7 +621,7 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
 
             <div>
               <div className="flex items-end justify-between gap-2 mb-1">
-                <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Reduction</p>
+                <p className="text-[11px] uppercase tracking-[0.06em] text-ink-3">Reduction</p>
                 <p className="text-[13px] font-semibold text-ink">{reductionPct}%</p>
               </div>
               <div className="flex items-center gap-2">
@@ -1125,27 +653,27 @@ export const WhatIfSimulatorCard = memo(function WhatIfSimulatorCard({
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
             <div className="rounded-card bg-kosha-surface-2 p-2.5">
-              <p className="text-[10px] text-ink-3">Current surplus</p>
+              <p className="text-[11px] text-ink-3">Current surplus</p>
               <p className={`text-[13px] font-semibold tabular-nums ${currentSurplus >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                 {currentSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(currentSurplus))}
               </p>
-              <p className="text-[10px] text-ink-3 mt-0.5">{currentSavingsRate}% savings rate</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{currentSavingsRate}% savings rate</p>
             </div>
 
             <div className="rounded-card bg-kosha-surface-2 p-2.5">
-              <p className="text-[10px] text-ink-3">Potential lift</p>
+              <p className="text-[11px] text-ink-3">Potential lift</p>
               <p className="text-[13px] font-semibold tabular-nums text-ink">
                 +{fmt(reductionAmount)}
               </p>
-              <p className="text-[10px] text-ink-3 mt-0.5">From {selectedCategory?.label || 'selected category'}</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">From {selectedCategory?.label || 'selected category'}</p>
             </div>
 
             <div className="rounded-card bg-kosha-surface-2 p-2.5">
-              <p className="text-[10px] text-ink-3">Projected surplus</p>
+              <p className="text-[11px] text-ink-3">Projected surplus</p>
               <p className={`text-[13px] font-semibold tabular-nums ${projectedSurplus >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                 {projectedSurplus >= 0 ? '+' : '-'}{fmt(Math.abs(projectedSurplus))}
               </p>
-              <p className="text-[10px] text-ink-3 mt-0.5">{projectedSavingsRate}% savings rate</p>
+              <p className="text-[11px] text-ink-3 mt-0.5">{projectedSavingsRate}% savings rate</p>
             </div>
           </div>
 
@@ -1282,22 +810,22 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Trend outflow / month</p>
+          <p className="text-[11px] text-ink-3">Trend outflow / month</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(trendOutflow, true)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Runway corpus</p>
+          <p className="text-[11px] text-ink-3">Runway corpus</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(reserveAmount, true)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">12m target</p>
+          <p className="text-[11px] text-ink-3">12m target</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(trendOutflow * 12, true)}</p>
         </div>
       </div>
 
       <div className="mb-3">
         <div className="flex items-center justify-between gap-2 mb-1">
-          <p className="text-[10px] uppercase tracking-[0.06em] text-ink-3">Adjust runway corpus</p>
+          <p className="text-[11px] uppercase tracking-[0.06em] text-ink-3">Adjust runway corpus</p>
           <span className="text-[12px] font-semibold text-accent-text">{fmt(reserveAmount, true)}</span>
         </div>
         <p className="text-[11px] text-ink-3 mb-1.5">Starts at your current balance. Change it to try another amount.</p>
@@ -1343,210 +871,6 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
       </div>
 
       <p className="text-[11px] text-ink-3 pt-2">Runway uses weighted outflow trend (last 3 months + yearly average) for more realistic coverage planning.</p>
-    </div>
-  )
-})
-
-export const VolatilityScoreCard = memo(function VolatilityScoreCard({ flowData }) {
-  const safeData = useMemo(() => (Array.isArray(flowData) ? flowData : []).map((row) => ({
-    Income: toFiniteNumber(row?.Income),
-    Spent: toFiniteNumber(row?.Spent),
-    Invested: toFiniteNumber(row?.Invested),
-  })), [flowData])
-
-  if (!safeData.length) return null
-
-  const scoreRows = [
-    {
-      key: 'Income',
-      label: 'Income consistency',
-      stats: computeVolatility(safeData.map((row) => row.Income)),
-      weight: 0.4,
-    },
-    {
-      key: 'Spent',
-      label: 'Expense consistency',
-      stats: computeVolatility(safeData.map((row) => row.Spent)),
-      weight: 0.35,
-    },
-    {
-      key: 'Invested',
-      label: 'Investment consistency',
-      stats: computeVolatility(safeData.map((row) => row.Invested)),
-      weight: 0.25,
-    },
-  ].map((row) => ({
-    ...row,
-    tone: scoreTone(row.stats.score),
-  }))
-
-  const weighted = scoreRows.reduce((acc, row) => {
-    if (row.stats.score == null) return acc
-    return {
-      total: acc.total + (row.stats.score * row.weight),
-      weight: acc.weight + row.weight,
-    }
-  }, { total: 0, weight: 0 })
-
-  const planningConfidence = weighted.weight > 0
-    ? Math.round(weighted.total / weighted.weight)
-    : null
-
-  const scoredRows = scoreRows.filter((row) => row.stats.score != null)
-  const strongest = [...scoredRows].sort((a, b) => b.stats.score - a.stats.score)[0]
-  const weakest = [...scoredRows].sort((a, b) => a.stats.score - b.stats.score)[0]
-
-  return (
-    <div className="card p-4 transition-transform duration-150 hover:-translate-y-0.5">
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div>
-          <p className="text-label font-semibold text-ink">Volatility Scoring</p>
-          <p className="text-[11px] text-ink-3 mt-0.5">Monthly stability score for income, expense, and investment consistency.</p>
-        </div>
-        <div className="text-right">
-          <p className="text-[15px] font-semibold tabular-nums text-ink">
-            {planningConfidence == null ? '—' : `${planningConfidence}/100`}
-          </p>
-          <p className="text-[10px] text-ink-3">planning confidence</p>
-        </div>
-      </div>
-
-      <div className="space-y-2.5">
-        {scoreRows.map((row) => {
-          const scoreValue = row.stats.score == null ? 0 : row.stats.score
-          const width = row.stats.score == null ? 0 : Math.max(6, scoreValue)
-          const cvLabel = row.stats.cv == null ? '—' : `${Math.round(row.stats.cv * 100)}% coeff. variation`
-
-          return (
-            <div key={row.key} className="rounded-card bg-kosha-surface-2 p-2.5">
-              <div className="flex items-center justify-between gap-2">
-                <p className="text-[11px] font-semibold text-ink">{row.label}</p>
-                <span className="text-[11px] font-semibold tabular-nums" style={{ color: row.tone.color }}>
-                  {row.stats.score == null ? '—' : `${row.stats.score}/100`}
-                </span>
-              </div>
-              <div className="mt-2 h-2 rounded-pill" style={{ background: 'var(--ds-border)' }}>
-                <div
-                  className="h-full rounded-pill"
-                  style={{
-                    width: `${width}%`,
-                    background: row.tone.fill,
-                  }}
-                />
-              </div>
-              <div className="mt-1 flex items-center justify-between gap-2 text-[10px] text-ink-3">
-                <span style={{ color: row.tone.color }}>{row.tone.label}</span>
-                <span>{cvLabel}</span>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-
-      <div className="mt-3 rounded-card border border-kosha-border bg-kosha-surface p-2.5 text-[11px] text-ink-3">
-        <span className="font-semibold text-ink">Focus area:</span>{' '}
-        {weakest
-          ? `${weakest.label} is least stable. Tightening this variance will improve year-end planning confidence fastest.`
-          : 'Need at least 2 active months per metric to score volatility reliably.'}
-        {strongest ? ` Strongest today: ${strongest.label.toLowerCase()}.` : ''}
-      </div>
-    </div>
-  )
-})
-
-const TREND_CHART_BG = '#003366'
-
-const ConfidenceTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null
-  const point = payload[0]?.payload
-  return (
-    <div className="tooltip-enter" style={{
-      background: 'rgba(34,43,109,0.96)',
-      borderRadius: 12,
-      padding: '10px 14px',
-      boxShadow: '0px 4px 8px 3px rgba(0,0,0,0.15)',
-      minWidth: 140,
-      border: '0.5px solid rgba(255,255,255,0.10)',
-    }}>
-      <p style={{
-        fontSize: 12, fontWeight: 500, color: 'rgba(255,255,255,0.5)',
-        letterSpacing: '0.04em', marginBottom: 6, textTransform: 'uppercase',
-      }}>
-        {label}
-      </p>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, marginBottom: 3 }}>
-        <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.75)' }}>Confidence</span>
-        <span style={{ fontSize: 13, fontWeight: 700, color: C.chartIncome }}>
-          {point?.confidence == null ? 'No data' : `${point.confidence}%`}
-        </span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>Signals</span>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.78)' }}>
-          {point?.linked || 0} linked · {point?.rejected || 0} mismatch
-        </span>
-      </div>
-    </div>
-  )
-}
-
-export const ConfidenceTrendChart = memo(function ConfidenceTrendChart({ trendData }) {
-  if (!Array.isArray(trendData) || trendData.length === 0) return null
-
-  const latest = [...trendData].reverse().find((p) => p?.confidence != null)
-  const latestConfidence = latest?.confidence ?? null
-
-  return (
-    <div
-      className="rounded-card overflow-hidden shadow-card-lg transition-transform duration-150 hover:-translate-y-0.5"
-      style={{ background: TREND_CHART_BG, border: '1px solid rgba(255,255,255,0.06)' }}
-    >
-      <div className="px-5 pt-5 pb-2 flex items-start justify-between">
-        <div>
-          <p className="text-label font-semibold" style={{ color: 'rgba(255,255,255,0.85)' }}>
-            Confidence Trend
-          </p>
-          <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 }}>
-            Daily linked vs mismatch quality (last 30 days)
-          </p>
-        </div>
-        <div className="text-right">
-          <p className="font-semibold tabular-nums" style={{
-            fontSize: 15,
-            color: latestConfidence != null && latestConfidence >= 70 ? C.chartIncome : C.chartExpense,
-            letterSpacing: '-0.01em',
-          }}>
-            {latestConfidence == null ? '—' : `${latestConfidence}%`}
-          </p>
-          <p style={{ fontSize: 10, color: 'rgba(255,255,255,0.35)', marginTop: 1 }}>latest day</p>
-        </div>
-      </div>
-
-      <ResponsiveContainer width="100%" height={130}>
-        <LineChart data={trendData} margin={{ top: 4, right: 16, left: 16, bottom: 0 }}>
-          <XAxis
-            dataKey="dateShort"
-            tick={{ fontSize: 10, fill: 'rgba(255,255,255,0.45)', fontWeight: 500 }}
-            axisLine={false}
-            tickLine={false}
-            interval="preserveStartEnd"
-            minTickGap={20}
-          />
-          <YAxis hide domain={[0, 100]} />
-          <Tooltip content={<ConfidenceTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.08)', strokeWidth: 1 }} />
-          <ReferenceLine y={70} stroke="rgba(255,255,255,0.18)" strokeDasharray="3 3" />
-          <Line
-            dataKey="confidence"
-            type="monotone"
-            stroke={C.chartIncome}
-            strokeWidth={2.5}
-            dot={false}
-            connectNulls={false}
-            activeDot={{ r: 4, fill: C.chartIncome, stroke: '#fff', strokeWidth: 2 }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
-      <div className="h-4" />
     </div>
   )
 })

@@ -13,7 +13,9 @@ export default function EditProfileNameDialog({ open, onClose }) {
   const inputRef = useRef(null)
   const mountedRef = useRef(true)
 
+  // Set on every mount: StrictMode unmounts and remounts once in development.
   useEffect(() => {
+    mountedRef.current = true
     return () => { mountedRef.current = false }
   }, [])
 

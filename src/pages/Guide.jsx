@@ -329,15 +329,15 @@ export default function Guide() {
             <div className="grid grid-cols-3 gap-2 mb-3.5">
               <div className="mini-panel px-2.5 py-2 text-center">
                 <p className="text-[16px] font-semibold text-ink leading-none">{FEATURE_CARDS.length}</p>
-                <p className="text-[10px] text-ink-3 mt-1">Playbooks</p>
+                <p className="text-[11px] text-ink-3 mt-1">Playbooks</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center">
                 <p className="text-[16px] font-semibold text-ink leading-none">{currentViewedCount}</p>
-                <p className="text-[10px] text-ink-3 mt-1">Viewed</p>
+                <p className="text-[11px] text-ink-3 mt-1">Viewed</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center">
                 <p className="text-[16px] font-semibold text-brand leading-none">{progressPct}%</p>
-                <p className="text-[10px] text-ink-3 mt-1">Progress</p>
+                <p className="text-[11px] text-ink-3 mt-1">Progress</p>
               </div>
             </div>
 
@@ -385,7 +385,7 @@ export default function Guide() {
             {START_HERE.map((step, i) => (
               <div key={step} className="mini-panel px-3 py-2.5 flex items-start gap-2.5">
                 <div className="w-5 h-5 rounded-full bg-brand-container border border-brand/15 flex items-center justify-center shrink-0 mt-0.5">
-                  <span className="text-[10px] font-semibold text-brand">{i + 1}</span>
+                  <span className="text-[11px] font-semibold text-brand">{i + 1}</span>
                 </div>
                 <p className="text-[12px] text-ink-2 leading-relaxed">{step}</p>
               </div>
@@ -405,7 +405,7 @@ export default function Guide() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`h-9 px-3 rounded-pill text-[11px] font-semibold whitespace-nowrap border transition-[background-color,border-color,color,box-shadow] duration-150 will-change-transform
                     ${active
-                      ? 'bg-brand text-white border-brand shadow-card-sm'
+                      ? 'bg-brand text-brand-on border-brand shadow-card-sm'
                       : 'bg-kosha-surface text-ink-3 border-kosha-border hover:bg-brand-container/45'}`}
                 >
                   {tab.label}
@@ -436,10 +436,10 @@ export default function Guide() {
                   <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-pill font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
+                        <span className={`text-[11px] px-1.5 py-0.5 rounded-pill font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
                            {isViewed ? 'Viewed' : 'New'}
                         </span>
-                        <span className="text-[10px] px-1.5 py-0.5 rounded-pill font-semibold bg-kosha-surface text-ink-3 border border-kosha-border capitalize">
+                        <span className="text-[11px] px-1.5 py-0.5 rounded-pill font-semibold bg-kosha-surface text-ink-3 border border-kosha-border capitalize">
                           {card.category}
                         </span>
                       </div>
@@ -495,7 +495,7 @@ export default function Guide() {
 
         <Card variant="outlined" className="fade-up fade-up-6 bg-brand-container/15 border-brand/20 p-4">
           <div className="flex items-start gap-3">
-            <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center shrink-0 text-white shadow-sm">
+            <div className="w-9 h-9 rounded-xl bg-brand flex items-center justify-center shrink-0 text-brand-on shadow-sm">
               <Sparkle size={16} />
             </div>
             <div className="flex-1 min-w-0 text-left">
@@ -528,7 +528,7 @@ export default function Guide() {
               <button
                 type="button"
                 onClick={closeFeatureDetail}
-                className="w-9 h-9 rounded-lg flex items-center justify-center border border-kosha-border bg-kosha-surface-2 hover:bg-kosha-surface-3 cursor-pointer shrink-0"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-kosha-border bg-kosha-surface-2 hover:bg-kosha-bg-2 cursor-pointer shrink-0"
                 aria-label="Close details"
               >
                 <X size={16} className="text-ink-2" />
@@ -554,7 +554,7 @@ export default function Guide() {
                   type="button"
                   disabled={selectedIndex >= navigationPool.length - 1}
                   onClick={() => moveFeature(1)}
-                  className="flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-brand hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-white font-semibold text-[13px] transition-all w-full shadow-sm"
+                  className="flex items-center justify-center gap-1.5 h-10 px-4 rounded-full bg-brand hover:opacity-90 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none text-brand-on font-semibold text-[13px] transition-all w-full shadow-sm"
                 >
                   <span>Next</span>
                   <ArrowRight size={14} />
@@ -572,7 +572,7 @@ export default function Guide() {
 
             {/* Recommended Workflow */}
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-ink-3 uppercase tracking-wider">Recommended workflow</p>
+              <p className="text-[11px] font-bold text-ink-3 uppercase tracking-wider">Recommended workflow</p>
               <div className="space-y-1 text-[12.5px] text-ink-2 leading-relaxed">
                 {selectedFeature.workflow.map((step, idx) => (
                   <p key={step} className="flex items-start gap-1">
@@ -616,7 +616,7 @@ export default function Guide() {
                 closeFeatureDetail()
                 navigate(route)
               }}
-              className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-brand hover:opacity-95 active:scale-[0.98] text-white font-semibold text-[14px] transition-all w-full shadow-sm"
+              className="flex items-center justify-center gap-2 h-10 px-5 rounded-full bg-brand hover:opacity-95 active:scale-[0.98] text-brand-on font-semibold text-[14px] transition-all w-full shadow-sm"
             >
               <span>Open {selectedFeature.title}</span>
               <ArrowRight size={14} />

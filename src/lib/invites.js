@@ -1,10 +1,5 @@
-// The "one active invite per user" cap is enforced by a BEFORE INSERT
-// trigger on `public.invites` (Migration 004) — the database is now the
-// only authority. We keep this constant exported because the UI uses it
-// to set the `limit` on listInvites() and to show a static helper string.
-// The previous client-side count check has been removed; relying on the
-// server avoids the race where two near-simultaneous create attempts
-// could both pass the count and both insert.
+// The database enforces this cap (a BEFORE INSERT trigger on public.invites).
+// The UI uses it only for the listInvites() limit and helper text.
 export const MAX_ACTIVE_INVITES = 1
 
 export const PENDING_WALLET_INVITE_KEY = 'pendingInviteToken'
@@ -127,6 +122,19 @@ export function inviteStatusLabel(inviteRow) {
   if (inviteRow?.used_by && inviteRow?.used_at) return 'Joined'
   if (inviteRow?.expires_at && new Date(inviteRow.expires_at) <= new Date()) return 'Expired'
   return 'Pending'
+}
+
+const WALLET_INVITE_REASON_MESSAGES = {
+  'unauthenticated': 'Sign in to accept this invitation.',
+  'missing-token-or-user': 'This invite link is incomplete. Ask your partner to send it again.',
+  'invite-not-found-or-used': 'This invite link has already been used or no longer exists.',
+  'invite-expired': 'This invite link has expired. Ask your partner for a new one.',
+  'cannot-consume-own-invite': 'This is your own invite link. Send it to your partner to link wallets.',
+  'already-linked': 'You or the invite creator are already linked to a wallet partner. Kosha supports a strict 1:1 partner model.',
+}
+
+export function walletInviteReasonMessage(reason) {
+  return WALLET_INVITE_REASON_MESSAGES[reason] || 'Could not join this wallet. Please try again.'
 }
 
 export async function consumeInviteToken({ supabaseClient, inviteToken, userId }) {

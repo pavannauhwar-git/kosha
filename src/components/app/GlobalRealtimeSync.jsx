@@ -26,6 +26,18 @@ export const REALTIME_INVALIDATION_POLICIES = [
 const REALTIME_CONNECT_TIMEOUT_MS = 8000
 const REALTIME_FALLBACK_POLL_MS = 30000
 const REALTIME_RETRY_DELAYS_MS = [15000, 30000, 60000]
+// A reconnect this soon after a refresh doesn't refresh again.
+const FRESHNESS_DEDUPE_MS = 10000
+// Shorter trips away with a live channel missed no events.
+const RESUME_REFRESH_MIN_HIDDEN_MS = 15000
+
+// This component refreshes these families when the app comes back, so React
+// Query's own focus refetch would fetch them a second time.
+for (const policy of REALTIME_INVALIDATION_POLICIES) {
+  for (const queryKey of policy.queryKeys || []) {
+    queryClient.setQueryDefaults(queryKey, { refetchOnWindowFocus: false })
+  }
+}
 
 function normalizeRealtimeValue(value) {
   if (value == null) return ''
@@ -136,6 +148,9 @@ export function GlobalRealtimeSync() {
     let attempt = 0
     let active = true
     let fallbackMode = false
+    let channelLive = false
+    let lastFreshnessAt = 0
+    let hiddenAt = document.visibilityState === 'hidden' ? Date.now() : 0
 
     function queryKeySignature(queryKey) {
       try {
@@ -198,6 +213,7 @@ export function GlobalRealtimeSync() {
     }
 
     function removeActiveChannel() {
+      channelLive = false
       clearConnectTimer()
       const currentChannel = channel
       channel = null
@@ -207,6 +223,7 @@ export function GlobalRealtimeSync() {
     }
 
     function invalidateFreshness() {
+      lastFreshnessAt = Date.now()
       for (const policy of REALTIME_INVALIDATION_POLICIES) {
         enqueuePolicyInvalidation(policy)
       }
@@ -304,12 +321,15 @@ export function GlobalRealtimeSync() {
 
         if (status === 'SUBSCRIBED') {
           subscribed = true
+          channelLive = true
           fallbackMode = false
           attempt = 0
           clearConnectTimer()
           clearReconnectTimer()
           stopFallbackPolling()
-          invalidateFreshness()
+          if (Date.now() - lastFreshnessAt > FRESHNESS_DEDUPE_MS) {
+            invalidateFreshness()
+          }
           if (trigger !== 'initial') {
             console.info('[Kosha] Realtime freshness restored.')
           }
@@ -317,6 +337,7 @@ export function GlobalRealtimeSync() {
         }
 
         if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          channelLive = false
           enterFallback(String(status).toLowerCase())
         }
       })
@@ -325,9 +346,15 @@ export function GlobalRealtimeSync() {
     subscribeToChannel()
 
     function handleVisibilityChange() {
-      if (document.visibilityState === 'visible' && active) {
-        invalidateFreshness()
+      if (!active) return
+      if (document.visibilityState === 'hidden') {
+        hiddenAt = Date.now()
+        return
       }
+      const awayMs = hiddenAt ? Date.now() - hiddenAt : Infinity
+      hiddenAt = 0
+      if (channelLive && awayMs < RESUME_REFRESH_MIN_HIDDEN_MS) return
+      invalidateFreshness()
     }
     document.addEventListener('visibilitychange', handleVisibilityChange)
 

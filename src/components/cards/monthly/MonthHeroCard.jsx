@@ -48,15 +48,15 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
       transition={{ type: 'spring', stiffness: 340, damping: 28, mass: 0.9 }}
     >
       <div className="flex items-center justify-between mb-3.5">
-        <p className="text-[10px] font-semibold tracking-[0.18em] uppercase" style={{ color: heroAccentStrong }}>
+        <p className="text-[11px] font-semibold tracking-[0.18em] uppercase" style={{ color: heroAccentStrong }}>
           {MONTH_NAMES[safeMonth - 1].slice(0, 3)} {year}
         </p>
-        <p className="text-[10px] font-semibold tracking-[0.2em] uppercase" style={{ color: C.heroDimmer }}>
+        <p className="text-[11px] font-semibold tracking-[0.2em] uppercase" style={{ color: C.heroDimmer }}>
           KOSHA
         </p>
       </div>
 
-      <p className="text-[10px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>Monthly balance</p>
+      <p className="text-[11px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>Monthly balance</p>
       <p className={`${balanceClass} font-bold leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere] ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
         {balanceParts.main}
         {balanceParts.decimal && (
@@ -99,7 +99,7 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
               className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip fade-in"
               style={{ animationDelay: STAT_DELAYS[i] }}
             >
-              <p className="text-[10px] sm:text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
+              <p className="text-[11px] mb-0.5 truncate tracking-wide" style={{ color: C.heroLabel }}>
                 {s.label}
               </p>
               <p className={`${statValueClass} font-semibold text-white tabular-nums leading-tight tracking-[-0.01em] whitespace-normal [overflow-wrap:anywhere]`}>

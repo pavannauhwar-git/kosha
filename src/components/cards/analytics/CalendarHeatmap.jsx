@@ -21,13 +21,13 @@ const CELL_SIZE    = 13  // px — slightly bigger than the old 11px
 const CELL_GAP     = 3   // px
 
 /* ── HeatmapCell ──────────────────────────────────────────────────────── */
+/* Cells are hover-only; screen readers get the grid summary and month list
+   instead of ~365 tab stops. */
 const HeatmapCell = memo(function HeatmapCell({ day, onHover, onLeave }) {
   const { bg, border } = CELL_STYLES[day.level]
   return (
     <div
-      role="gridcell"
-      tabIndex={0}
-      aria-label={`${day.label}: ${fmt(day.value)}`}
+      aria-hidden="true"
       style={{
         width: CELL_SIZE,
         height: CELL_SIZE,
@@ -41,8 +41,6 @@ const HeatmapCell = memo(function HeatmapCell({ day, onHover, onLeave }) {
       className="hover:scale-125 hover:z-10 relative"
       onMouseEnter={(e) => onHover(day, e)}
       onMouseLeave={onLeave}
-      onFocus={(e) => onHover(day, e)}
-      onBlur={onLeave}
     />
   )
 })
@@ -195,7 +193,10 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
 
   /* Computed dimensions for the grid */
   const gridWidth  = weeks.length * (CELL_SIZE + CELL_GAP) - CELL_GAP
-  const weekdayLabelWidth = 26
+  const weekdayLabelWidth = 32
+  const gridSummary = stats.activeDays > 0
+    ? `Spend calendar for ${year}: ${stats.activeDays} days with spending, ${fmt(stats.totalSpend)} in total. Highest day ${stats.peakDay.label}, ${fmt(stats.maxSpend)}.`
+    : `Spend calendar for ${year}: no spending recorded.`
 
   if (loading) {
     return (
@@ -218,13 +219,25 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
             Daily spending intensity across {year}. Darker = higher spend.
           </p>
         </div>
-        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-ink-2 shrink-0">
+        <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-ink-2 shrink-0">
           {stats.activeDays} active days
         </span>
       </div>
 
+      <ul className="sr-only">
+        {monthTotals.map((m) => (
+          <li key={m.month}>{`${MONTH_SHORT[m.month]} ${year}: ${fmt(Math.round(m.total))}`}</li>
+        ))}
+      </ul>
+
       {/* ── Heatmap grid ───────────────────────────────────────────── */}
-      <div className="overflow-x-auto -mx-1 px-1 pb-1" ref={gridRef} style={{ position: 'relative' }}>
+      <div
+        className="overflow-x-auto -mx-1 px-1 pb-1"
+        ref={gridRef}
+        style={{ position: 'relative' }}
+        role="img"
+        aria-label={gridSummary}
+      >
         {/* Floating tooltip */}
         {activeDay && (
           <div
@@ -260,7 +273,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
                       key={`ml-${wi}`}
                       style={{ width: CELL_SIZE, flexShrink: 0 }}
                     >
-                      <span className="text-[8px] text-ink-3 font-semibold leading-none">
+                      <span className="text-[11px] text-ink-3 font-semibold leading-none whitespace-nowrap">
                         {monthLabels[li].label}
                       </span>
                     </div>
@@ -287,7 +300,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
                   style={{ height: CELL_SIZE }}
                   className="flex items-center justify-end"
                 >
-                  <span className="text-[8px] text-ink-3 leading-none">{label}</span>
+                  <span className="text-[11px] text-ink-3 leading-none">{label}</span>
                 </div>
               ))}
             </div>
@@ -331,7 +344,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
         <MonthSparkline monthTotals={monthTotals} />
         <div className="flex justify-between mt-1">
           {MONTH_SHORT.map((m) => (
-            <span key={m} className="text-[8px] text-ink-3 flex-1 text-center">{m}</span>
+            <span key={m} className="text-[11px] text-ink-3 flex-1 text-center">{m}</span>
           ))}
         </div>
       </div>
@@ -340,7 +353,7 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
       <div className="flex items-center justify-between gap-4 mt-3 flex-wrap">
         {/* Legend */}
         <div className="flex items-center gap-1.5">
-          <span className="text-[9px] text-ink-3">Less</span>
+          <span className="text-[11px] text-ink-3">Less</span>
           {CELL_STYLES.map(({ bg, border }, i) => (
             <div
               key={`leg-${i}`}
@@ -354,22 +367,22 @@ export default function CalendarHeatmap({ dailyTotals = {}, year, loading }) {
               }}
             />
           ))}
-          <span className="text-[9px] text-ink-3">More</span>
+          <span className="text-[11px] text-ink-3">More</span>
         </div>
 
         {/* Stats */}
         <div className="flex items-center gap-3">
           <div className="text-right">
-            <p className="text-[9px] text-ink-3">Total spend</p>
+            <p className="text-[11px] text-ink-3">Total spend</p>
             <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(stats.totalSpend)}</p>
           </div>
           <div className="text-right">
-            <p className="text-[9px] text-ink-3">Avg / active day</p>
+            <p className="text-[11px] text-ink-3">Avg / active day</p>
             <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(Math.round(stats.avgSpend))}</p>
           </div>
           {stats.peakDay && (
             <div className="text-right">
-              <p className="text-[9px] text-ink-3">Peak</p>
+              <p className="text-[11px] text-ink-3">Peak</p>
               <p className="text-[11px] font-semibold tabular-nums text-expense-text">{fmt(stats.maxSpend)}</p>
             </div>
           )}

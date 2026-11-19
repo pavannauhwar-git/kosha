@@ -74,14 +74,14 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
         <div>
           <p className="section-label">{title}</p>
           {subtitle ? (
-            <p className="text-[10px] text-ink-3 mt-0.5">{subtitle}</p>
+            <p className="text-[11px] text-ink-3 mt-0.5">{subtitle}</p>
           ) : (
-            <p className="text-[10px] text-ink-3 mt-0.5">Quick monthly spend footprint by category.</p>
+            <p className="text-[11px] text-ink-3 mt-0.5">Quick monthly spend footprint by category.</p>
           )}
         </div>
         <div className="flex items-center gap-2.5 shrink-0">
           <div className="text-right shrink-0">
-            <p className="text-[10px] text-ink-3">Total</p>
+            <p className="text-[11px] text-ink-3">Total</p>
             <p className="text-[13px] font-bold text-expense-text tabular-nums">{fmt(safeTotal)}</p>
           </div>
           {onManageBudgets && (
@@ -98,13 +98,13 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
       </div>
 
       <div className="flex flex-wrap gap-1.5 mb-2.5">
-        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-ink-2 font-semibold tabular-nums">
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[11px] text-ink-2 font-semibold tabular-nums">
           Top: {dominant.name}
         </span>
-        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-warning-text font-semibold tabular-nums">
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[11px] text-warning-text font-semibold tabular-nums">
           Top share {dominant.sharePct}%
         </span>
-        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[10px] text-ink-2 font-semibold tabular-nums">
+        <span className="px-2 py-1 rounded-pill border border-kosha-border bg-kosha-surface-2 text-[11px] text-ink-2 font-semibold tabular-nums">
           Top 3 cover {topThreeShare}%
         </span>
       </div>
@@ -122,7 +122,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
                 </div>
                 <div className="min-w-0">
                   <p className="text-[11px] font-semibold text-ink truncate">{row.name}</p>
-                  <p className="text-[10px] text-ink-3 tabular-nums">
+                  <p className="text-[11px] text-ink-3 tabular-nums">
                     {row.sharePct}% of total
                     {row.budgetLimit > 0 ? ` · ${row.budgetPct}% budget` : ''}
                   </p>
@@ -131,7 +131,7 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
               <div className="text-right shrink-0">
                 <p className="text-[11px] font-semibold tabular-nums text-expense-text">{row.amountLabel}</p>
                 {row.budgetSignal && (
-                  <p className={`text-[9px] font-semibold ${row.budgetSignal.className}`}>{row.budgetSignal.label}</p>
+                  <p className={`text-[11px] font-semibold ${row.budgetSignal.className}`}>{row.budgetSignal.label}</p>
                 )}
               </div>
             </div>
@@ -147,14 +147,14 @@ const CategorySpendingChart = memo(function CategorySpendingChart({
 
         {hiddenRows.length > 0 && (
           <div className="px-3 py-2 border-t border-dashed border-kosha-border bg-kosha-surface">
-            <p className="text-[10px] text-ink-3">
+            <p className="text-[11px] text-ink-3">
               {hiddenRows.length} smaller categor{hiddenRows.length === 1 ? 'y' : 'ies'} combine to {fmt(hiddenAmount)} ({hiddenShare}%).
             </p>
           </div>
         )}
       </div>
 
-      <p className="text-[10px] text-ink-3 mt-2">Spending mix across {rows.length} active categories this month.</p>
+      <p className="text-[11px] text-ink-3 mt-2">Spending mix across {rows.length} active categories this month.</p>
     </div>
   )
 })

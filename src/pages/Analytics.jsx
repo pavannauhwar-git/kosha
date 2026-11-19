@@ -249,38 +249,38 @@ export default function Analytics() {
               <div className="fade-up fade-up-1 card p-3.5 border-0">
                 <div className="flex items-start justify-between gap-3 mb-2">
                   <div>
-                    <p className="text-[10px] text-ink-3 tracking-wide">Year summary</p>
+                    <p className="text-[11px] text-ink-3 tracking-wide">Year summary</p>
                     <p className="text-[14px] font-semibold text-ink mt-1">{year}</p>
                   </div>
-                  <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-pill ${yearSummaryCard.band === 'healthy' ? 'bg-income-bg text-income-text' : yearSummaryCard.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-warning-bg text-warning-text'}`}>
+                  <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-pill ${yearSummaryCard.band === 'healthy' ? 'bg-income-bg text-income-text' : yearSummaryCard.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-warning-bg text-warning-text'}`}>
                     {yearSummaryCard.band === 'healthy' ? 'Healthy' : yearSummaryCard.band === 'watch' ? 'Watch' : 'Stressed'}
                   </span>
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <div className="mini-panel px-3 py-2.5">
-                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Income</p>
+                    <p className="text-[11px] text-ink-3 uppercase tracking-wide">Income</p>
                     <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(yearSummaryCard.income)}</p>
                   </div>
                   <div className="mini-panel px-3 py-2.5">
-                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Outflow</p>
+                    <p className="text-[11px] text-ink-3 uppercase tracking-wide">Outflow</p>
                     <p className="text-[13px] font-semibold tabular-nums text-ink mt-1">{fmt(yearSummaryCard.outflow)}</p>
                   </div>
                   <div className="mini-panel px-3 py-2.5">
-                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Net</p>
+                    <p className="text-[11px] text-ink-3 uppercase tracking-wide">Net</p>
                     <p className={`text-[13px] font-semibold tabular-nums mt-1 ${yearSummaryCard.net >= 0 ? 'text-income-text' : 'text-warning-text'}`}>
                       {yearSummaryCard.net >= 0 ? '+' : '-'}{fmt(Math.abs(yearSummaryCard.net))}
                     </p>
                   </div>
                   <div className="mini-panel px-3 py-2.5">
-                    <p className="text-[10px] text-ink-3 uppercase tracking-wide">Savings</p>
+                    <p className="text-[11px] text-ink-3 uppercase tracking-wide">Savings</p>
                     <p className={`text-[13px] font-semibold tabular-nums mt-1 ${bandTextClass(yearSummaryCard.band)}`}>
                       {formatSavingsRate(yearSummaryCard.savingsRate)}
                     </p>
                   </div>
                 </div>
 
-                <p className="text-[10px] text-ink-3 mt-2 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-2 tabular-nums">
                   {yearSummaryCard.positiveMonths}/{yearSummaryCard.activeMonths || 0} months closed positive
                 </p>
               </div>
@@ -299,14 +299,14 @@ export default function Analytics() {
                 <div className="fade-up fade-up-3 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   {yearHealthSignal && (
                     <div className="card p-3.5 border-0">
-                      <p className="text-[10px] text-ink-3 tracking-wide">Year health score</p>
+                      <p className="text-[11px] text-ink-3 tracking-wide">Year health score</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(yearHealthSignal.band)}`}>
                         {yearHealthSignal.score}/100
                       </p>
                       <p className="text-[11px] text-ink-2 mt-1">
                         {yearHealthSignal.positiveMonths}/{yearHealthSignal.activeMonths} months closed positive
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                      <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                         Avg savings rate {formatSavingsRate(yearHealthSignal.avgSavings)}
                       </p>
                     </div>
@@ -314,14 +314,14 @@ export default function Analytics() {
 
                   {expenseConcentrationSignal && (
                     <div className="card p-3.5 border-0">
-                      <p className="text-[10px] text-ink-3 tracking-wide">Expense concentration</p>
+                      <p className="text-[11px] text-ink-3 tracking-wide">Expense concentration</p>
                       <p className={`text-[18px] font-semibold tabular-nums mt-1 ${bandTextClass(expenseConcentrationSignal.band)}`}>
                         {expenseConcentrationSignal.topThreePct}%
                       </p>
                       <p className="text-[11px] text-ink-2 mt-1">
                         Top 3 categories share of annual spend
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-1 tabular-nums truncate" title={expenseConcentrationSignal.topCategoryLabel}>
+                      <p className="text-[11px] text-ink-3 mt-1 tabular-nums truncate" title={expenseConcentrationSignal.topCategoryLabel}>
                         {expenseConcentrationSignal.topCategoryLabel}: {fmt(expenseConcentrationSignal.topCategoryAmount)}
                       </p>
                     </div>

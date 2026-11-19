@@ -11,6 +11,7 @@ export function useTransactionExporter({
   activeWalletUserId,
   typeFilter,
   catFilter,
+  vehicleFilter,
   paymentModeFilter,
   debouncedSearch,
   startDate,
@@ -41,6 +42,7 @@ export function useTransactionExporter({
 
         if (typeFilter !== 'all') q = q.eq('type', typeFilter)
         if (catFilter) q = q.eq('category', catFilter)
+        if (vehicleFilter) q = q.eq('investment_vehicle', vehicleFilter)
         if (paymentModeFilter) q = q.eq('payment_mode', paymentModeFilter)
         if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
         if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
@@ -96,19 +98,20 @@ export function useTransactionExporter({
       const filters = [
         typeFilter !== 'all' ? typeFilter : '',
         catFilter ? (CATEGORY_LABELS[catFilter] || catFilter) : '',
+        vehicleFilter || '',
         paymentModeFilter ? (PAYMENT_MODE_LABELS[paymentModeFilter] || paymentModeFilter) : '',
       ].filter(Boolean).join('-')
 
       const fileName = `kosha-${filters || 'transactions'}-${todayStr()}.csv`
-      downloadCsv(fileName, csv)
-      pushToast(`Downloaded ${fileName} (${exportRows.length} rows).`)
+      const outcome = await downloadCsv(fileName, csv)
+      if (outcome !== 'cancelled') pushToast(`Exported ${fileName} (${exportRows.length} rows).`)
     } catch (e) {
       pushToast(e.message || 'Could not export transactions.', { duration: 4000 })
     } finally {
       exportingRef.current = false
       setIsExporting(false)
     }
-  }, [typeFilter, catFilter, paymentModeFilter, debouncedSearch, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, pushToast, activeWalletUserId])
+  }, [typeFilter, catFilter, vehicleFilter, paymentModeFilter, debouncedSearch, startDate, endDate, linkedLoanId, linkedBillId, linkedSplitExpenseId, linkedSplitSettlementId, pushToast, activeWalletUserId])
 
   return { exportCSV, isExporting }
 }

@@ -125,6 +125,10 @@ export function initErrorReporting() {
             createRoutesFromChildren,
             matchRoutes,
           }),
+          // runtimeMonitor reports unhandled rejections (including ones from
+          // before Sentry loaded); Sentry's own handler would send non-Error
+          // rejections a second time.
+          Sentry.globalHandlersIntegration({ onerror: true, onunhandledrejection: false }),
         ],
         tracesSampleRate: import.meta.env.PROD ? 0.1 : 1.0,
         beforeBreadcrumb(crumb) {

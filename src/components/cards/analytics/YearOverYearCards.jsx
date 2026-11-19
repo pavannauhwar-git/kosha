@@ -249,9 +249,9 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
           const delta = deltaPct(row.current, row.compare)
           return (
             <div key={`metric-${row.label}`} className="rounded-card bg-kosha-surface-2 p-2.5">
-              <p className="text-[10px] text-ink-3">{row.label}</p>
+              <p className="text-[11px] text-ink-3">{row.label}</p>
               <p className={`text-[13px] font-semibold tabular-nums ${row.tone}`}>{fmt(row.current, true)}</p>
-              <p className="text-[10px] text-ink-3 mt-0.5">
+              <p className="text-[11px] text-ink-3 mt-0.5">
                 vs {compareYear}: {delta == null ? 'n/a' : `${delta >= 0 ? '+' : ''}${delta}%`}
               </p>
             </div>
@@ -260,19 +260,19 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
       </div>
 
       <div className="rounded-card bg-kosha-surface-2 p-3 mb-2.5">
-        <p className="text-[10px] text-ink-3 mb-1.5">Metric comparison: {currentYear} vs {compareYear}</p>
+        <p className="text-[11px] text-ink-3 mb-1.5">Metric comparison: {currentYear} vs {compareYear}</p>
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={comparisonChartRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="metric"
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={tickCompact}
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
@@ -285,19 +285,19 @@ export default function YearOverYearCards({ years, currentYear, enabled = true }
       </div>
 
       <div className="rounded-card bg-kosha-surface-2 p-2.5">
-        <p className="text-[10px] text-ink-3 mb-1.5">Net trend by year</p>
+        <p className="text-[11px] text-ink-3 mb-1.5">Net trend by year</p>
         <ResponsiveContainer width="100%" height={168}>
           <BarChart data={trendRows} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="year"
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)', fontWeight: 500 }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
               tickFormatter={tickCompact}
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}

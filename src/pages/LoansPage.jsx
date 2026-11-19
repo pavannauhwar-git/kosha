@@ -54,7 +54,7 @@ export default function LoansPage() {
           aria-label="Add loan"
           onClick={() => setShowAdd(true)}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </motion.button>
       )}
       <PartnerViewBanner />

@@ -57,6 +57,21 @@ function isSameDay(a, b) {
   return !!a && !!b && toIsoDate(a) === toIsoDate(b)
 }
 
+function startOfToday() {
+  const now = new Date()
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12)
+}
+
+function isDayButton(target) {
+  return typeof target?.id === 'string' && target.id.startsWith('day-')
+}
+
+function isOtherControl(target) {
+  return !isDayButton(target)
+    && typeof target?.closest === 'function'
+    && !!target.closest('button, input, select, textarea, a[href]')
+}
+
 export default function PixelDatePicker({
   value,
   onChange,
@@ -72,10 +87,8 @@ export default function PixelDatePicker({
   const [viewDate, setViewDate] = useState(() => selectedDate || new Date())
 
   const monthGrid = useMemo(() => buildMonthGrid(viewDate), [viewDate])
-  const today = useMemo(() => {
-    const now = new Date()
-    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12)
-  }, [])
+  // Read on every render so a picker left mounted past midnight moves on.
+  const today = startOfToday()
 
   useEffect(() => {
     if (open) {
@@ -87,6 +100,14 @@ export default function PixelDatePicker({
     if (!open) return
 
     const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setOpen(false)
+        return
+      }
+      // Leave the month, Today and Clear buttons their own keys. Enter on a
+      // day button clicks it, which selects that day.
+      if (isOtherControl(e.target)) return
+
       let nextDate = null
       switch (e.key) {
         case 'ArrowLeft':
@@ -113,10 +134,8 @@ export default function PixelDatePicker({
         case 'End':
           nextDate = new Date(viewDate.getFullYear(), viewDate.getMonth() + 1, 0, 12)
           break
-        case 'Escape':
-          setOpen(false)
-          break
         case 'Enter':
+          if (isDayButton(e.target)) return
           e.preventDefault()
           onChange(toIsoDate(viewDate))
           setOpen(false)
@@ -189,7 +208,7 @@ export default function PixelDatePicker({
 
           <div className="grid grid-cols-7 gap-1 mb-1.5">
             {WEEKDAY_LABELS.map((label) => (
-              <div key={label} className="h-7 flex items-center justify-center text-[10px] font-semibold uppercase tracking-[0.08em] text-ink-4">
+              <div key={label} className="h-7 flex items-center justify-center text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-4">
                 {label.slice(0, 1)}
               </div>
             ))}
@@ -206,6 +225,9 @@ export default function PixelDatePicker({
                   key={day.iso}
                   id={`day-${day.iso}`}
                   type="button"
+                  tabIndex={isView ? 0 : -1}
+                  aria-pressed={isSelected}
+                  aria-current={isToday ? 'date' : undefined}
                   onClick={() => {
                     onChange(day.iso)
                     setOpen(false)
@@ -213,7 +235,7 @@ export default function PixelDatePicker({
                   className={[
                     'h-9 rounded-full text-[12px] font-semibold transition-[transform,background-color] duration-150 will-change-transform',
                     isSelected
-                      ? 'bg-brand text-white shadow-[0_4px_10px_rgba(var(--ds-primary-rgb), 0.26)]'
+                      ? 'bg-brand text-brand-on shadow-[0_4px_10px_rgba(var(--ds-primary-rgb),0.26)]'
                       : day.inMonth
                         ? 'text-ink hover:bg-kosha-surface-2'
                         : 'text-ink-4 hover:bg-kosha-surface-2/70',

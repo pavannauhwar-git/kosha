@@ -167,7 +167,7 @@ export default function Splitwise() {
           className="py-10"
           imageUrl="/illustrations/splitwise_group.webp"
           title="No split group yet"
-          description={isViewingPartner ? "This partner has no split groups." : "Create a group, invite Kosha users, and split expenses together."}
+          description={isViewingPartner ? "Split groups aren't shared between linked wallets. Switch to your own wallet to see yours." : "Create a group, invite Kosha users, and split expenses together."}
           actionLabel={isViewingPartner ? undefined : "Create group"}
           onAction={isViewingPartner ? undefined : () => setShowCreateGroup(true)}
         />
@@ -262,7 +262,7 @@ export default function Splitwise() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                   </div>
                   <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <p className="text-[10px] opacity-80 mb-0.5 tracking-wider uppercase">Trip Invitation</p>
+                    <p className="text-[11px] opacity-80 mb-0.5 tracking-wider uppercase">Trip Invitation</p>
                     <h2 className="text-[20px] font-bold truncate leading-tight">{invitePreview?.groupName || 'Shared group'}</h2>
                   </div>
                 </div>
@@ -405,7 +405,7 @@ export default function Splitwise() {
                       type="button"
                       onClick={() => setExpenseForm((prev) => ({ ...prev, split_method: option.key }))}
                       className={`h-9 rounded-card border text-[11px] font-semibold ${expenseForm.split_method === option.key
-                        ? 'border-brand-dark bg-brand-dark text-white'
+                        ? 'border-brand-dark bg-brand-dark text-brand-on'
                         : 'border-kosha-border bg-kosha-surface text-ink-3'
                         }`}
                     >
@@ -443,6 +443,7 @@ export default function Splitwise() {
                               pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="Amount"
+                              aria-label={`Amount for ${resolveMemberName(member)}`}
                               value={current.exact}
                               onChange={(event) => setSplitInputs((prev) => ({
                                 ...prev,
@@ -462,6 +463,7 @@ export default function Splitwise() {
                               pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="%"
+                              aria-label={`Percent for ${resolveMemberName(member)}`}
                               value={current.percent}
                               onChange={(event) => setSplitInputs((prev) => ({
                                 ...prev,
@@ -481,6 +483,7 @@ export default function Splitwise() {
                               pattern="[0-9.]*"
                               className="w-[92px] rounded-pill border border-kosha-border bg-kosha-surface px-2 py-1 text-right text-[12px] text-ink"
                               placeholder="Shares"
+                              aria-label={`Shares for ${resolveMemberName(member)}`}
                               value={current.shares}
                               onChange={(event) => setSplitInputs((prev) => ({
                                 ...prev,

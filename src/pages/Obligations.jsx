@@ -72,15 +72,6 @@ export default function Obligations() {
   return (
     <PageHeaderPage title="Obligations">
       <div className="page-stack">
-        {!isLoading && !loadFailed && !isViewingPartner && (
-          <div className="fade-up fade-up-1 px-0.5">
-            <p className="section-label mb-1">Your Journey</p>
-            <p className="text-[13px] text-ink-3 leading-relaxed">
-              Add a bill or loan to get started with your obligations journey.
-            </p>
-          </div>
-        )}
-
         {/* ── Loading skeleton ────────────────────────────────────────── */}
         {isLoading && (
           <div className="fade-up fade-up-2 flex flex-col gap-3">
@@ -193,19 +184,19 @@ export default function Obligations() {
                 <div className="px-4 pb-4">
                   <div className="grid grid-cols-3 gap-2 mb-2.5">
                     <div className="mini-panel px-2.5 py-2">
-                      <p className="text-[10px] text-ink-3 uppercase tracking-wide mb-1">Overdue</p>
+                      <p className="text-[11px] text-ink-3 uppercase tracking-wide mb-1">Overdue</p>
                       <p className={`text-label font-semibold tabular-nums ${overdueCount > 0 ? 'text-expense-text' : 'text-ink-3'}`}>
                         {overdueCount}
                       </p>
                     </div>
                     <div className="mini-panel px-2.5 py-2">
-                      <p className="text-[10px] text-ink-3 uppercase tracking-wide mb-1">Due soon</p>
+                      <p className="text-[11px] text-ink-3 uppercase tracking-wide mb-1">Due soon</p>
                       <p className={`text-label font-semibold tabular-nums ${dueSoonCount > 0 ? 'text-warning-text' : 'text-ink-3'}`}>
                         {dueSoonCount}
                       </p>
                     </div>
                     <div className="mini-panel px-2.5 py-2">
-                      <p className="text-[10px] text-ink-3 uppercase tracking-wide mb-1">Recurring</p>
+                      <p className="text-[11px] text-ink-3 uppercase tracking-wide mb-1">Recurring</p>
                       <p className="text-label font-semibold tabular-nums text-ink">
                         {recurringCount}
                       </p>

@@ -406,6 +406,22 @@ md-switch:focus-visible {
   outline: none;
 }
 
+/* Text buttons take their label and icon colour from the element, so a
+   `text-*` class on <Button variant="ghost"> works. Brand blue by default. */
+md-text-button {
+  color: var(--ds-primary);
+  --md-text-button-label-text-color: currentColor;
+  --md-text-button-hover-label-text-color: currentColor;
+  --md-text-button-focus-label-text-color: currentColor;
+  --md-text-button-pressed-label-text-color: currentColor;
+  --md-text-button-icon-color: currentColor;
+  --md-text-button-hover-icon-color: currentColor;
+  --md-text-button-focus-icon-color: currentColor;
+  --md-text-button-pressed-icon-color: currentColor;
+  --md-text-button-hover-state-layer-color: currentColor;
+  --md-text-button-pressed-state-layer-color: currentColor;
+}
+
 button,
 a,
 .fab,
@@ -991,7 +1007,7 @@ a,
   .fab,
   .fab-bills,
   .fab-loans {
-    @apply fixed w-14 h-14 text-white rounded-2xl shadow-fab flex items-center justify-center cursor-pointer;
+    @apply fixed w-14 h-14 text-brand-on rounded-2xl shadow-fab flex items-center justify-center cursor-pointer;
     z-index: var(--ds-z-fab);
     background: var(--ds-primary);
     bottom: calc(var(--nav-height) + 1rem);
@@ -1340,6 +1356,14 @@ a,
     margin-right: auto;
   }
 
+  .card.p-4 {
+    padding: 0.9rem;
+  }
+
+  .card.p-5 {
+    padding: 1.1rem;
+  }
+
   @media (min-width: 600px) {
     .page {
       padding-left: 1.5rem;
@@ -1396,7 +1420,7 @@ a,
     }
 
     .section-label {
-      font-size: 10.5px;
+      font-size: 11px;
     }
 
     .nav-float {
@@ -1444,15 +1468,6 @@ a,
       padding: 1.4rem;
     }
   }
-
-  .card.p-4 {
-    padding: 0.9rem;
-  }
-
-  .card.p-5 {
-    padding: 1.1rem;
-  }
-
 
   /* -- Progress bars ──────────────────────────────────────────────────── */
   /* Uses scaleX instead of width — scaleX is compositor-accelerated,

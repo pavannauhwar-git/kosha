@@ -8,6 +8,7 @@ import { supabase } from '../lib/supabase'
 import { previewSplitGroupInviteMutation, consumeSplitGroupInviteMutation } from '../hooks/useSplitwise'
 import {
   consumeInviteToken,
+  walletInviteReasonMessage,
   PENDING_WALLET_INVITE_KEY,
   PENDING_SPLIT_INVITE_KEY,
   savePendingInvite,
@@ -146,7 +147,7 @@ export default function InviteLanding() {
           inviteToken: activeToken,
           userId: user.id
         })
-        if (!result.consumed) throw new Error(result.reason || 'Could not join wallet.')
+        if (!result.consumed) throw new Error(walletInviteReasonMessage(result.reason))
         clearPendingInvite(PENDING_WALLET_INVITE_KEY)
         setStatus('success')
         navTimerRef.current = setTimeout(() => { navigate('/', { replace: true }) }, 1500)
@@ -156,8 +157,6 @@ export default function InviteLanding() {
       const msg = e.message || ''
       if (msg.includes('idx_split_group_members_group_name_unique')) {
         setError('You are already a member of this group.')
-      } else if (msg === 'already-linked') {
-        setError('You or the invite creator are already linked to a wallet partner. Kosha supports a strict 1:1 partner model.')
       } else {
         setError(msg || 'Failed to accept invitation.')
       }

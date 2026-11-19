@@ -40,7 +40,6 @@ function SettingRow({ icon, label, sublabel, onClick, destructive = false, disab
     ? {
       role: 'switch',
       'aria-checked': toggleState,
-      'aria-pressed': toggleState,
     }
     : {}
   const nonInteractive = disabled || muted
@@ -128,8 +127,8 @@ export default function Settings() {
   }
   const reminderSwitchStyle = remindersPaused
     ? {
-      // md-switch is never set to disabled state — interaction is blocked via
-      // pointer-events:none. We override the track/handle colors to convey "paused".
+      // md-switch is never set to disabled state — it is decorative (the row is
+      // the switch). We override the track/handle colors to convey "paused".
       // opacity:1 opts out of Switch's automatic 0.38 fallback — the grey colors
       // already communicate the paused state without additional dimming.
       opacity: 1,
@@ -450,7 +449,7 @@ export default function Settings() {
               <div className="min-w-0 flex-1">
                 <p className="text-[18px] sm:text-[22px] font-bold text-ink tracking-tight truncate leading-tight">{displayName}</p>
                 <p className="text-[12px] sm:text-[13px] text-ink-3 truncate mt-0.5">{user?.email}</p>
-                <div className="mt-2.5 inline-flex items-center gap-1.5 text-[10px] font-bold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider shadow-sm">
+                <div className="mt-2.5 inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-pill bg-brand-container text-brand border border-brand/15 uppercase tracking-wider shadow-sm">
                   <ShieldWarning size={12} /> Private account
                 </div>
               </div>
@@ -502,7 +501,7 @@ export default function Settings() {
               sublabel={isDark ? 'Currently dark' : 'Currently light'}
               onClick={toggleDarkMode}
               toggleState={isDark}
-              rightElement={<Switch checked={isDark} onChange={() => { }} sx={{ pointerEvents: 'none' }} />}
+              rightElement={<Switch checked={isDark} decorative />}
             />
           </div>
         </motion.div>
@@ -524,7 +523,7 @@ export default function Settings() {
                   setPasswordMsg('')
                 }}
                 rightElement={(
-                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
+                  <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${showPasswordForm ? 'bg-brand-container text-brand' : 'bg-kosha-surface-2 text-ink-3'}`}>
                     {showPasswordForm ? 'OPEN' : 'CLOSED'}
                   </span>
                 )}
@@ -601,7 +600,7 @@ export default function Settings() {
                 <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">Alerts appear while Kosha is open on this device</p>
               </div>
-              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
+              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${reminderPrefs.enabled ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>
                 {reminderPrefs.enabled ? 'Active' : 'Paused'}
               </span>
             </div>
@@ -615,8 +614,7 @@ export default function Settings() {
               rightElement={(
                 <Switch
                   checked={reminderPrefs.enabled}
-                  onChange={() => { }}
-                  sx={{ pointerEvents: 'none' }}
+                  decorative
                   style={reminderMasterSwitchStyle}
                 />
               )}
@@ -632,8 +630,7 @@ export default function Settings() {
               rightElement={(
                 <Switch
                   checked={reminderPrefs.bill_due}
-                  onChange={() => { }}
-                  sx={{ pointerEvents: 'none' }}
+                  decorative
                   style={reminderSwitchStyle}
                 />
               )}
@@ -649,8 +646,7 @@ export default function Settings() {
               rightElement={(
                 <Switch
                   checked={reminderPrefs.spending_pace}
-                  onChange={() => { }}
-                  sx={{ pointerEvents: 'none' }}
+                  decorative
                   style={reminderSwitchStyle}
                 />
               )}
@@ -690,7 +686,7 @@ export default function Settings() {
                 {linkedProfiles.map((lp) => (
                   <div key={lp.id} className="px-4 py-3.5 flex items-center justify-between gap-3 bg-kosha-surface-2">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand-border shrink-0">
+                      <div className="w-9 h-9 rounded-full bg-brand-container flex items-center justify-center overflow-hidden border border-brand/20 shrink-0">
                         {lp.avatar_url ? (
                           <SecureAvatar
                             src={lp.avatar_url}
@@ -705,7 +701,7 @@ export default function Settings() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13px] font-semibold text-ink leading-tight truncate">{lp.display_name}</p>
-                        <p className="text-[10px] text-ink-3 mt-1 flex items-center gap-1.5 uppercase font-bold tracking-wider">
+                        <p className="text-[11px] text-ink-3 mt-1 flex items-center gap-1.5 uppercase font-bold tracking-wider">
                           <span className="w-1.5 h-1.5 rounded-full bg-income animate-pulse" />
                           Live Sync Active
                         </p>
@@ -757,11 +753,11 @@ export default function Settings() {
                 <p className="text-[12px] font-semibold text-ink-3">Recent invite links</p>
                 <div className="flex items-center gap-2">
                   {joinedInviteCount > 0 && (
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-income-bg text-income-text">
+                    <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-income-bg text-income-text">
                       {joinedInviteCount} joined
                     </span>
                   )}
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-kosha-surface text-ink-3 border border-kosha-border">
+                  <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-full bg-kosha-surface text-ink-3 border border-kosha-border">
                     {pendingInviteCount}/{MAX_ACTIVE_INVITES} pending
                   </span>
                 </div>
@@ -777,7 +773,7 @@ export default function Settings() {
                     <div key={invite.id} className="mini-panel px-2.5 py-2">
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-[11px] text-ink-3">{fmtDate(invite.created_at)}</p>
-                        <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
+                        <span className={`text-[11px] font-semibold px-1.5 py-0.5 rounded-full ${status === 'Joined' ? 'bg-income-bg text-income-text' : 'bg-warning-bg text-warning-text'}`}>
                           {status}
                         </span>
                       </div>
@@ -913,7 +909,7 @@ export default function Settings() {
         </motion.div>
 
         <motion.div variants={fadeUp} className="py-6 flex flex-col items-center gap-1 opacity-50">
-          <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest">Kosha Finance</p>
+          <p className="text-[11px] font-bold text-ink-3 uppercase tracking-widest">Kosha Finance</p>
           <p className="text-[11px] text-ink-4">Version {APP_VERSION}</p>
         </motion.div>
       </motion.div>

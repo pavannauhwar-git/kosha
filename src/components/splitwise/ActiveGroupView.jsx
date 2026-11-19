@@ -54,7 +54,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
         </div>
         <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between">
           <div className="text-white overflow-hidden max-w-[70%]">
-            <p className="text-[10px] opacity-80 uppercase tracking-widest truncate">{activeBanner.name}</p>
+            <p className="text-[11px] opacity-80 uppercase tracking-widest truncate">{activeBanner.name}</p>
             <h2 className="text-[22px] font-bold truncate">{activeGroup.name}</h2>
           </div>
           {!activeGroup.is_archived && isGroupAdmin && (
@@ -69,15 +69,15 @@ const ActiveGroupView = memo(function ActiveGroupView({
       </div>
       <div className="grid grid-cols-3 gap-2.5">
         <div className="card p-3">
-          <p className="text-[10px] text-ink-3">You owe</p>
+          <p className="text-[11px] text-ink-3">You owe</p>
           <p className="mt-1 text-[15px] font-semibold amt-expense tabular-nums">{fmt(Math.max(0, -selfNet))}</p>
         </div>
         <div className="card p-3">
-          <p className="text-[10px] text-ink-3">You are owed</p>
+          <p className="text-[11px] text-ink-3">You are owed</p>
           <p className="mt-1 text-[15px] font-semibold amt-income tabular-nums">{fmt(Math.max(0, selfNet))}</p>
         </div>
         <div className="card p-3">
-          <p className="text-[10px] text-ink-3">Total expenses</p>
+          <p className="text-[11px] text-ink-3">Total expenses</p>
           <p className="mt-1 text-[15px] font-semibold text-ink tabular-nums">{fmt(totalExpenses)}</p>
         </div>
       </div>
@@ -88,7 +88,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
           {isGroupAdmin && !activeGroup?.is_archived && (
             <button
               onClick={() => setShowAddMember(true)}
-              className="rounded-pill bg-kosha-surface-2 px-2 py-0.5 text-[11px] font-semibold text-brand hover:bg-brand hover:text-white transition-colors"
+              className="rounded-pill bg-kosha-surface-2 px-2 py-0.5 text-[11px] font-semibold text-brand hover:bg-brand hover:text-brand-on transition-colors"
             >
               + Add Member
             </button>
@@ -144,7 +144,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                           {displayName} {isSelfMember ? '(You)' : ''}
                         </p>
                         {memberRole === 'left' && (
-                          <span className="rounded bg-rose-500/10 px-1.5 py-[1px] text-[9px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                          <span className="rounded bg-rose-500/10 px-1.5 py-[1px] text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
                             Left
                           </span>
                         )}
@@ -246,19 +246,31 @@ const ActiveGroupView = memo(function ActiveGroupView({
           </div>
         ) : (
           <div className="space-y-2">
-            {suggestedTransfers.map((transfer, index) => (
-              <button
-                key={`${transfer.from?.id}-${transfer.to?.id}-${index}`}
-                type="button"
-                onClick={() => applySuggestedTransfer(transfer)}
-                className="w-full mini-panel px-2.5 py-2 text-left hover:brightness-[0.98]"
-              >
-                <p className="text-[12px] font-semibold text-ink">
-                  {resolveMemberName(transfer.from)} pays {resolveMemberName(transfer.to)}
-                </p>
-                <p className="text-[11px] tabular-nums amt-expense mt-0.5">{fmt(transfer.amount)}</p>
-              </button>
-            ))}
+            {suggestedTransfers.map((transfer, index) => {
+              const key = `${transfer.from?.id}-${transfer.to?.id}-${index}`
+              const content = (
+                <>
+                  <p className="text-[12px] font-semibold text-ink">
+                    {resolveMemberName(transfer.from)} pays {resolveMemberName(transfer.to)}
+                  </p>
+                  <p className="text-[11px] tabular-nums amt-expense mt-0.5">{fmt(transfer.amount)}</p>
+                </>
+              )
+              return canManageGroup ? (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => applySuggestedTransfer(transfer)}
+                  className="w-full mini-panel px-2.5 py-2 text-left hover:brightness-[0.98]"
+                >
+                  {content}
+                </button>
+              ) : (
+                <div key={key} className="w-full mini-panel px-2.5 py-2 text-left">
+                  {content}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>
@@ -325,7 +337,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                   <span className="opacity-60"> · split {t.split_expense_splits.length} ways</span>
                                 )}
                               </p>
-                              <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.expense_date)}</p>
+                              <p className="text-[11px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.expense_date)}</p>
                             </div>
                           </div>
                           <div className="text-right shrink-0 flex flex-col justify-start items-end">
@@ -335,7 +347,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 <button
                                   type="button"
                                   onClick={() => openEditExpense(t)}
-                                  className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                  className="text-[11px] font-semibold text-brand/80 hover:text-brand"
                                   disabled={!!saving}
                                 >
                                   Edit
@@ -343,7 +355,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 <button
                                   type="button"
                                   onClick={() => { if (window.confirm('Delete this expense from the group? It is also removed from your own transactions. Other members keep their entry, with a note that you deleted it.')) void handleDeleteExpense(t.id) }}
-                                  className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                  className="text-[11px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
                                   Delete
@@ -367,7 +379,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                               <p className="text-[11px] text-ink-3 mt-1 truncate">
                                 <span className="font-medium text-ink">{resolveMemberName(payer)}</span> paid <span className="font-medium text-ink">{resolveMemberName(payee)}</span>
                               </p>
-                              <p className="text-[10px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.settled_at)}</p>
+                              <p className="text-[11px] text-ink-3 mt-0.5 opacity-80">{fmtDate(t.settled_at)}</p>
                             </div>
                           </div>
                           <div className="text-right shrink-0 flex flex-col justify-start items-end">
@@ -377,7 +389,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 <button
                                   type="button"
                                   onClick={() => openEditSettlement(t)}
-                                  className="text-[10px] font-semibold text-brand/80 hover:text-brand"
+                                  className="text-[11px] font-semibold text-brand/80 hover:text-brand"
                                   disabled={!!saving}
                                 >
                                   Edit
@@ -385,7 +397,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
                                 <button
                                   type="button"
                                   onClick={() => { if (window.confirm('Delete this settlement from the group? It is also removed from your own transactions. The other person keeps their entry, with a note that you deleted it.')) void handleDeleteSettlement(t.id) }}
-                                  className="text-[10px] font-semibold text-danger/80 hover:text-danger"
+                                  className="text-[11px] font-semibold text-danger/80 hover:text-danger"
                                   disabled={!!saving}
                                 >
                                   Delete
