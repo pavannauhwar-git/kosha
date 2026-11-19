@@ -17,7 +17,6 @@ import { GlobalRealtimeSync } from './components/app/GlobalRealtimeSync'
 import {
   ScrollManager,
   RuntimeRouteTracker,
-  VersionHeartbeat,
   DashboardWarmPrefetch,
   RecurringSync,
   EagerChunkPreloader,
@@ -71,7 +70,7 @@ function AppShell() {
       <div className="relative min-h-dvh flex flex-col bg-kosha-bg">
         <a
           href="#main-content"
-          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-white focus:shadow-card"
+          className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:rounded-pill focus:bg-ink dark:focus:bg-kosha-bg focus:px-4 focus:py-2 focus:text-on-grad focus:shadow-card"
         >
           Skip to content
         </a>
@@ -129,7 +128,6 @@ export default function App() {
               <GlobalRealtimeSync />
               <DashboardWarmPrefetch />
               <RecurringSync />
-              <VersionHeartbeat />
               <AppContent />
             </PersistQueryClientProvider>
           </AuthProvider>

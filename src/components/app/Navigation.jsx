@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { House, List, CalendarDots, ChartBar, Receipt, UsersThree } from '@phosphor-icons/react'
 import { useAuth } from '../../context/AuthContext'
-import { getActiveWalletUserId } from '../../lib/walletStore'
+import { useActiveWallet } from '../../lib/walletStore'
 import { queryClient } from '../../lib/queryClient'
 import { supabase } from '../../lib/supabase'
 import { hapticTap } from '../../lib/haptics'
@@ -24,10 +24,11 @@ export const NAV = [
 export const BOTTOM_NAV_HIDE_ON = ['/login', '/onboarding', '/join', '/splitwise/join', '/auth', '/about', '/report-bug', '/settings', '/guide', '/reconciliation']
 
 export function useRouteIntentPrefetch() {
-  useAuth() // subscribed so re-render triggers on session change
+  const { user } = useAuth()
+  const authUserId = user?.id
   const chunkPrefetched = useRef(new Set())
   const dataPrefetched = useRef(new Set())
-  const activeUserId = getActiveWalletUserId()
+  const activeUserId = useActiveWallet()
 
   // Reset prefetch tracking on session change to ensure fresh data for new user
   useEffect(() => {
@@ -154,6 +155,8 @@ export function useRouteIntentPrefetch() {
     }
 
     if (path === '/splitwise') {
+      // Split groups are the signed-in user's, never the partner wallet's.
+      if (activeUserId !== authUserId) return
       void Promise.all([
         queryClient.prefetchQuery({
           queryKey: ['splitwise', 'groups', activeUserId],
@@ -246,7 +249,7 @@ export function useRouteIntentPrefetch() {
         }),
       ]).catch(() => { })
     }
-  }, [activeUserId])
+  }, [activeUserId, authUserId])
 }
 
 export function BottomNav() {
@@ -291,15 +294,7 @@ export function BottomNav() {
             <button
               key={item.path}
               className="nav-float-item"
-              onClick={(_e) => {
-                hapticTap()
-                if (isActive) {
-                  window.scrollTo({ top: 0, behavior: 'smooth' })
-                  return
-                }
-                navigate(item.path, { replace: true })
-              }}
-              onPointerUp={() => {
+              onClick={() => {
                 hapticTap()
                 if (isActive) {
                   window.scrollTo({ top: 0, behavior: 'smooth' })

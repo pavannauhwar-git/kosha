@@ -34,6 +34,8 @@ export default function KoshaErrorPage({
     : 'bg-expense-bg text-expense-text border-expense-border'
 
   useEffect(() => {
+    // Set on every mount: StrictMode unmounts and remounts once in development.
+    mountedRef.current = true
     const frameId = window.requestAnimationFrame(() => {
       headingRef.current?.focus()
     })

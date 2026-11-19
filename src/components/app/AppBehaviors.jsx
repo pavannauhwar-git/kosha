@@ -10,6 +10,7 @@ import { supabase } from '../../lib/supabase'
 import { recordRuntimeRoute } from '../../lib/runtimeMonitor'
 import { fetchMonthSummary, syncRecurringTransactions, balanceAsOfKey, fetchBalanceAsOf } from '../../hooks/useTransactions'
 import { ROUTE_PRELOADERS } from './AppRoutes'
+import { NAV } from './Navigation'
 
 export const DASHBOARD_RECENT_COLUMNS =
   'id, date, created_at, type, amount, description, category, investment_vehicle, is_repayment, payment_mode, notes, source_transaction_id, linked_split_expense_id, linked_split_settlement_id, linked_bill_id, linked_loan_id'
@@ -46,59 +47,6 @@ export function RuntimeRouteTracker() {
     recordRuntimeRoute(path)
   }, [location.pathname, location.search])
 
-  return null
-}
-
-function hasActiveTextEditing() {
-  const activeEl = document.activeElement
-  if (!activeEl || !(activeEl instanceof HTMLElement)) return false
-  const tag = activeEl.tagName
-  return (
-    tag === 'INPUT' ||
-    tag === 'TEXTAREA' ||
-    tag === 'SELECT' ||
-    activeEl.isContentEditable
-  )
-}
-
-function hasOpenDialogSurface() {
-  return Boolean(
-    document.querySelector('[aria-modal="true"]') ||
-    document.querySelector('.sheet-panel')
-  )
-}
-
-export function VersionHeartbeat() {
-  const qc = useQueryClient()
-
-  useEffect(() => {
-    const HEARTBEAT_INTERVAL = 24 * 60 * 60 * 1000 // 24 hours
-
-    async function hasWaitingServiceWorker() {
-      try {
-        if (!('serviceWorker' in navigator)) return false
-        const reg = await navigator.serviceWorker.getRegistration()
-        return !!(reg && reg.waiting)
-      } catch {
-        return false
-      }
-    }
-
-    const interval = setInterval(async () => {
-      if (
-        document.visibilityState !== 'visible' ||
-        qc.isMutating() !== 0 ||
-        hasActiveTextEditing() ||
-        hasOpenDialogSurface()
-      ) {
-        return
-      }
-      if (await hasWaitingServiceWorker()) {
-        window.location.reload()
-      }
-    }, HEARTBEAT_INTERVAL)
-    return () => clearInterval(interval)
-  }, [qc])
   return null
 }
 
@@ -216,7 +164,7 @@ export function DashboardWarmPrefetch() {
 
 export function EagerChunkPreloader() {
   useEffect(() => {
-    const loaders = Object.values(ROUTE_PRELOADERS)
+    const loaders = NAV.map(({ path }) => ROUTE_PRELOADERS[path]).filter(Boolean)
     let handle = null
 
     const run = () => {
@@ -277,7 +225,7 @@ export function QueryErrorRecovery() {
       role="status"
       aria-live="polite"
       aria-atomic="true"
-      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 flex items-center gap-3 bg-ink text-white px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto" style={{ zIndex: "var(--ds-z-toast)" }}
+      className="fixed bottom-[calc(var(--nav-height)+1rem)] left-4 right-4 flex items-center gap-3 bg-ink dark:bg-kosha-bg text-on-grad border border-on-grad/10 px-4 py-3 rounded-card shadow-card-lg max-w-[398px] mx-auto" style={{ zIndex: "var(--ds-z-toast)" }}
     >
       <span className="text-[13px] font-medium flex-1">Something didn&apos;t load correctly.</span>
       <button
@@ -286,7 +234,7 @@ export function QueryErrorRecovery() {
           qc.refetchQueries({ predicate: (q) => q.state.status === 'error' && q.getObserversCount() > 0 })
           setDismissed(true)
         }}
-        className="text-white hover:text-white text-xs font-semibold shrink-0 px-3 py-1.5 rounded-pill bg-white/20 active:bg-white/30"
+        className="text-on-grad text-xs font-semibold shrink-0 px-3 py-1.5 rounded-pill bg-on-grad/15 active:bg-on-grad/25"
       >
         Retry
       </button>
@@ -294,7 +242,7 @@ export function QueryErrorRecovery() {
         type="button"
         onClick={() => setDismissed(true)}
         aria-label="Dismiss retry banner"
-        className="text-white/60 hover:text-white text-xs shrink-0 px-1"
+        className="text-on-grad/70 hover:text-on-grad text-xs shrink-0 px-1"
       >
         ✕
       </button>
@@ -407,16 +355,17 @@ export function ShellStatusBanners() {
   useEffect(() => {
     if (!swRegistration) return undefined
 
+    // update() rejects when offline or when the server is unreachable; the
+    // next check retries, so the failure needs no report.
+    const checkForUpdate = () => {
+      swRegistration.update().catch(() => { })
+    }
     const handleVisibility = () => {
-      if (document.visibilityState === 'visible') {
-        void swRegistration.update()
-      }
+      if (document.visibilityState === 'visible') checkForUpdate()
     }
     document.addEventListener('visibilitychange', handleVisibility)
 
-    const intervalId = window.setInterval(() => {
-      void swRegistration.update()
-    }, 30 * 60 * 1000)
+    const intervalId = window.setInterval(checkForUpdate, 30 * 60 * 1000)
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility)
@@ -511,7 +460,7 @@ export function ShellStatusBanners() {
                 type="button"
                 onClick={() => { void handleAppUpdate() }}
                 disabled={updating}
-                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-brand-on disabled:opacity-60"
               >
                 {updating ? 'Updating…' : 'Update Now'}
               </button>
@@ -540,7 +489,7 @@ export function ShellStatusBanners() {
                 type="button"
                 onClick={() => { void handleInstall() }}
                 disabled={installing}
-                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-60"
+                className="rounded-pill bg-brand-dark px-3 py-1 text-[11px] font-semibold text-brand-on disabled:opacity-60"
               >
                 {installing ? 'Installing…' : 'Install'}
               </button>
@@ -554,7 +503,7 @@ export function ShellStatusBanners() {
               transition={{ duration: 0.18 }}
               role="status"
               aria-live="polite"
-              className="pointer-events-auto rounded-card bg-ink px-3 py-2.5 text-[12px] font-medium text-white shadow-card"
+              className="pointer-events-auto rounded-card bg-ink dark:bg-kosha-bg border border-on-grad/10 px-3 py-2.5 text-[12px] font-medium text-on-grad shadow-card"
             >
               {installMessage}
             </motion.div>
