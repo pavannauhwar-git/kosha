@@ -3,9 +3,11 @@ import '@material/web/switch/switch.js'
 
 /**
  * Switch — High-performance, premium Switch wrapping official Google Material 3 Web Component (<md-switch>).
+ * `decorative` is for rows that are themselves the switch (role="switch"):
+ * the visual switch is then hidden from screen readers, focus and taps.
  */
 const Switch = forwardRef(function Switch(
-  { checked, onChange, disabled, className = '', style = {}, _sx, ...props },
+  { checked, onChange, disabled, decorative = false, className = '', style = {}, _sx, ...props },
   ref
 ) {
   const innerRef = useRef(null)
@@ -32,6 +34,21 @@ const Switch = forwardRef(function Switch(
     el.addEventListener('change', handleChange)
     return () => el.removeEventListener('change', handleChange)
   }, [onChange, resolvedRef])
+
+  if (decorative) {
+    return (
+      <md-switch
+        ref={resolvedRef}
+        selected={checked ? '' : undefined}
+        disabled={disabled ? '' : undefined}
+        inert=""
+        aria-hidden="true"
+        tabIndex={-1}
+        class={className}
+        style={style}
+      />
+    )
+  }
 
   return (
     <md-switch

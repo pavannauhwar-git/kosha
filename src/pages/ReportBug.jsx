@@ -174,14 +174,16 @@ export default function ReportBug() {
       description: cleanDescription,
     })
 
-    const environment = {
-      viewport: `${window.innerWidth}x${window.innerHeight}`,
-      pixelRatio: window.devicePixelRatio || 1,
-      platform: navigator.platform,
-      language: navigator.language,
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      online: navigator.onLine,
-    }
+    const environment = includeDiagnostics
+      ? {
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
+        pixelRatio: window.devicePixelRatio || 1,
+        platform: navigator.platform,
+        language: navigator.language,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        online: navigator.onLine,
+      }
+      : null
 
     const diagnostics = includeDiagnostics
       ? {
@@ -469,12 +471,13 @@ export default function ReportBug() {
               </div>
 
               <div>
-                <p className="text-caption text-ink-3 mb-2">Severity</p>
-                <div className="flex gap-2">
+                <p id="bug-severity-label" className="text-caption text-ink-3 mb-2">Severity</p>
+                <div className="flex gap-2" role="group" aria-labelledby="bug-severity-label">
                   {SEVERITIES.map(s => (
                     <button
                       key={s.id}
                       type="button"
+                      aria-pressed={severity === s.id}
                       onClick={() => setSeverity(s.id)}
                       className={`px-3 py-1.5 rounded-pill text-label font-semibold border transition-colors
                           ${severity === s.id
@@ -490,13 +493,17 @@ export default function ReportBug() {
               <div className="w-full flex items-center justify-between px-3 py-2.5 mini-panel">
                 <span className="text-[14px] font-medium text-ink">Include diagnostics</span>
                 <Switch
+                  aria-label="Include diagnostics"
                   checked={includeDiagnostics}
                   onChange={(e) => setIncludeDiagnostics(e.target.checked)}
                 />
               </div>
 
               <p className="text-[11px] text-ink-3 -mt-1">
-                Includes route, browser, device type, timezone, and viewport size. No financial entries, location coordinates, or personal identity fields are attached.
+                Diagnostics add your browser, device type, language, timezone and screen size. Without them only the page you came from is sent. No financial entries, location coordinates or personal identity fields are attached.
+              </p>
+              <p className="text-[11px] text-ink-3">
+                The title, description, page and screenshot are posted to the developer&apos;s private bug-report chat. Your contact email is stored with the report but is not posted to the chat.
               </p>
 
               {error && <p className="text-sm text-expense-text" role="alert" aria-live="polite">{error}</p>}

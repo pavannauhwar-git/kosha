@@ -185,7 +185,7 @@ function LinkedTransactionInfoSheet({ txn, onClose }) {
       <button
         onClick={handleGoToSource}
         disabled={navigating}
-        className="w-full h-12 rounded-2xl bg-brand text-white font-semibold text-[15px] flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-60 transition-opacity"
+        className="w-full h-12 rounded-2xl bg-brand text-brand-on font-semibold text-[15px] flex items-center justify-center gap-2 active:opacity-80 disabled:opacity-60 transition-opacity"
       >
         {navigating ? (
           <CircleNotch size={18} className="animate-spin" />
@@ -428,17 +428,21 @@ function TransactionItem({
             aria-hidden={!actionsEnabled}
           >
             <button
+              type="button"
+              tabIndex={actionsEnabled ? 0 : -1}
               onClick={handleDuplicateTap}
               className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
                        bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
             >
               <CopySimple size={18} weight="bold" color="var(--c-brand)" />
-              <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+              <span className="text-[11px] font-semibold" style={{ color: 'var(--c-brand)' }}>
                 Repeat
               </span>
             </button>
 
             <motion.button
+              type="button"
+              tabIndex={actionsEnabled ? 0 : -1}
               onClick={handleDeleteTap}
               className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
                        active:scale-[0.96] active:opacity-80 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
@@ -447,7 +451,7 @@ function TransactionItem({
               <span>
                 <Trash size={18} weight="bold" color="currentColor" />
               </span>
-              <span className="text-[10px] font-semibold" style={{ color: deleteFg }}>Delete</span>
+              <span className="text-[11px] font-semibold" style={{ color: deleteFg }}>Delete</span>
             </motion.button>
           </motion.div>
         )}
@@ -550,33 +554,33 @@ function TransactionItem({
                   {showDate ? fmtDate(txn.date) : rowLabel}
                 </span>
                 {txn.is_repayment && !isLoanLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
                     Repayment
                   </span>
                 )}
                 {txn.notes && (
-                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
+                  <span className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
                     <Notepad size={10} weight="bold" className="text-ink-3" />
                     Note
                   </span>
                 )}
                 {isSplitwiseLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     Splitwise
                   </span>
                 )}
                 {isBillLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     Bill
                   </span>
                 )}
                 {isLoanLinked && txn.is_repayment && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
                     {txn.type === 'income' ? 'Repayment Received' : 'Repayment Made'}
                   </span>
                 )}
                 {isLoanLinked && !txn.is_repayment && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     {txn.type === 'expense' ? 'Loan Disbursement' : 'Loan Received'}
                   </span>
                 )}
@@ -584,57 +588,57 @@ function TransactionItem({
             ) : (
               <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                 {showDate
-                  ? <span className="text-[10px] sm:text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
-                  : <span className="text-[10px] sm:text-[11px] text-ink-3">{rowLabel}</span>
+                  ? <span className="text-[11px] text-ink-3">{fmtDate(txn.date)}</span>
+                  : <span className="text-[11px] text-ink-3">{rowLabel}</span>
                 }
                 {mode && (
-                  <span className="text-[10px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
+                  <span className="text-[11px] font-medium text-ink-3 bg-kosha-surface-2 px-1.5 py-px rounded-md">
                     {mode}
                   </span>
                 )}
                 {txn.is_repayment && !isLoanLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium">
                     Repayment
                   </span>
                 )}
                 {txn.notes && (
-                  <span className="flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
+                  <span className="flex items-center gap-1 text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium shrink-0" title={txn.notes}>
                     <Notepad size={10} weight="bold" className="text-ink-3" />
                     Note
                   </span>
                 )}
                 {txn.is_recurring && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium capitalize">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink border border-kosha-border font-medium capitalize">
                     {txn.recurrence || 'Recurring'}
                   </span>
                 )}
                 {txn.is_auto_generated && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 font-medium">
                     Auto
                   </span>
                 )}
                 {isOptimistic && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-warning-bg text-warning-text font-medium">
                     Syncing...
                   </span>
                 )}
                 {isSplitwiseLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     Splitwise
                   </span>
                 )}
                 {isBillLinked && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     Bill
                   </span>
                 )}
                 {isLoanLinked && txn.is_repayment && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-repay-bg text-repay-text font-medium shrink-0">
                     {txn.type === 'income' ? 'Repayment Received' : 'Repayment Made'}
                   </span>
                 )}
                 {isLoanLinked && !txn.is_repayment && (
-                  <span className="text-[10px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
+                  <span className="text-[11px] px-1.5 py-0.5 rounded-pill bg-brand-container text-brand font-medium shrink-0">
                     {txn.type === 'expense' ? 'Loan Disbursement' : 'Loan Received'}
                   </span>
                 )}
