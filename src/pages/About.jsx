@@ -168,15 +168,15 @@ export default function About() {
             <div className="grid grid-cols-3 gap-2 mt-4">
               <div className="mini-panel px-2.5 py-2 text-center">
                 <p className="text-[16px] font-semibold text-ink leading-none">{releaseCount}</p>
-                <p className="text-[10px] text-ink-3 mt-1">Releases</p>
+                <p className="text-[11px] text-ink-3 mt-1">Releases</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center">
                 <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
-                <p className="text-[10px] text-ink-3 mt-1">Improvements</p>
+                <p className="text-[11px] text-ink-3 mt-1">Improvements</p>
               </div>
               <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
                 <p className="text-[16px] font-semibold text-brand leading-none">0</p>
-                <p className="text-[10px] text-brand/80 mt-1">Ad trackers</p>
+                <p className="text-[11px] text-brand/80 mt-1">Ad trackers</p>
               </div>
             </div>
 

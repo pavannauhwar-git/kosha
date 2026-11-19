@@ -89,22 +89,22 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
           <p className="section-label">Weekly spend drift</p>
           <p className="text-caption text-ink-3 mt-0.5">This week so far vs your usual pace. Rent, EMIs, bills and repayments are left out.</p>
         </div>
-        <span className={`text-[10px] px-2 py-1 rounded-pill font-semibold ${statusTone}`}>
+        <span className={`text-[11px] px-2 py-1 rounded-pill font-semibold ${statusTone}`}>
           {driftData.statusLabel}
         </span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
         <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
-          <p className="text-[10px] tracking-wide text-ink-3">This week</p>
+          <p className="text-[11px] tracking-wide text-ink-3">This week</p>
           <p className="text-[12px] font-semibold tabular-nums text-expense-text mt-0.5">{fmt(driftData.currentWeekTotal)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
-          <p className="text-[10px] tracking-wide text-ink-3">4W median</p>
+          <p className="text-[11px] tracking-wide text-ink-3">4W median</p>
           <p className="text-[12px] font-semibold tabular-nums text-ink mt-0.5">{fmt(driftData.median4w)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
-          <p className="text-[10px] tracking-wide text-ink-3">Drift</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Drift</p>
           <p className={`text-[12px] font-semibold tabular-nums mt-0.5 ${driftTone}`}>
             {driftData.driftPct == null
               ? '—'
@@ -112,7 +112,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 px-3 py-2" style={{ border: '1px solid var(--ds-border)' }}>
-          <p className="text-[10px] tracking-wide text-ink-3">Vs last week</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Vs last week</p>
           <p className={`text-[12px] font-semibold tabular-nums mt-0.5 ${wowTone}`}>
             {driftData.wowPct == null
               ? '—'
@@ -123,8 +123,8 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
 
       <div className="rounded-card bg-kosha-surface-2 px-2.5 py-2" style={{ border: '1px solid var(--ds-border)' }}>
         <div className="flex items-center justify-between mb-1 px-0.5">
-          <p className="text-[10px] text-ink-3">Last 8 weeks</p>
-          <p className="text-[10px] text-ink-3">Blue line = 4W median</p>
+          <p className="text-[11px] text-ink-3">Last 8 weeks</p>
+          <p className="text-[11px] text-ink-3">Blue line = 4W median</p>
         </div>
 
         <ResponsiveContainer width="100%" height={132}>
@@ -132,7 +132,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="label"
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               interval={0}
@@ -140,7 +140,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
             <YAxis
               domain={[0, yDomainMax]}
               tickFormatter={compactTick}
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
@@ -168,7 +168,7 @@ export default memo(function SpendingPaceTracker({ dailyExpenseTotals, now, drif
         </ResponsiveContainer>
       </div>
 
-      <p className="text-[10px] text-ink-3 mt-1.5 leading-relaxed">
+      <p className="text-[11px] text-ink-3 mt-1.5 leading-relaxed">
         {driftData.guidance}
       </p>
     </div>

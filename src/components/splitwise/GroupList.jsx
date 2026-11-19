@@ -18,7 +18,7 @@ const GroupList = memo(function GroupList({
     <div className="page-stack">
       <div className="grid grid-cols-2 gap-2.5">
         <div className="card p-3">
-          <p className="text-[10px] text-ink-3">Admin in</p>
+          <p className="text-[11px] text-ink-3">Admin in</p>
           <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
             <p className="text-[15px] font-semibold text-ink tabular-nums">{groupStats.adminActive} active</p>
             {groupStats.adminArchived > 0 && (
@@ -27,7 +27,7 @@ const GroupList = memo(function GroupList({
           </div>
         </div>
         <div className="card p-3">
-          <p className="text-[10px] text-ink-3">Member in</p>
+          <p className="text-[11px] text-ink-3">Member in</p>
           <div className="mt-1 flex items-baseline gap-1.5 flex-wrap">
             <p className="text-[15px] font-semibold text-ink tabular-nums">{groupStats.memberActive} active</p>
             {groupStats.memberArchived > 0 && (
@@ -79,7 +79,7 @@ const GroupList = memo(function GroupList({
                       </p>
                     </div>
                     <span
-                      className={`rounded-pill px-2 py-0.5 text-[10px] font-semibold border ${group.is_archived
+                      className={`rounded-pill px-2 py-0.5 text-[11px] font-semibold border ${group.is_archived
                         ? 'bg-kosha-border/60 text-white/70 border-white/10 backdrop-blur-md'
                         : isAdmin
                           ? 'bg-black/40 text-white border-white/20 backdrop-blur-md'
@@ -91,7 +91,7 @@ const GroupList = memo(function GroupList({
                         : (isAdmin ? 'Admin' : group.my_role === 'member' ? 'Member' : 'Viewer')}
                     </span>
                   </div>
-                  <p className="text-[10px] font-medium text-white/70 shadow-sm">Tap to view balances, expenses, and settlements.</p>
+                  <p className="text-[11px] font-medium text-white/70 shadow-sm">Tap to view balances, expenses, and settlements.</p>
                 </div>
               </button>
             )

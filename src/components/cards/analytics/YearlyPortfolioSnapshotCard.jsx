@@ -114,7 +114,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
             Yearly allocation mix, concentration &amp; deployment.
           </p>
         </div>
-        <span className="text-[10px] px-2.5 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2 border border-kosha-border tabular-nums shrink-0">
+        <span className="text-[11px] px-2.5 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2 border border-kosha-border tabular-nums shrink-0">
           {safeVehicleData.length} vehicle{safeVehicleData.length !== 1 ? 's' : ''}
         </span>
       </div>
@@ -122,21 +122,21 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
       {/* ── 2×2 Metric grid ────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-2 mb-3">
         <div className="mini-panel px-3 py-2.5">
-          <p className="text-[10px] text-ink-3 uppercase tracking-wide">Invested</p>
+          <p className="text-[11px] text-ink-3 uppercase tracking-wide">Invested</p>
           <p className="text-[13px] font-semibold tabular-nums text-invest-text mt-1">{fmt(totalPortfolio)}</p>
         </div>
         <div className="mini-panel px-3 py-2.5">
-          <p className="text-[10px] text-ink-3 uppercase tracking-wide">Deployment</p>
+          <p className="text-[11px] text-ink-3 uppercase tracking-wide">Deployment</p>
           <p className={`text-[13px] font-semibold tabular-nums mt-1 ${deployColor}`}>{deploymentRate}%</p>
         </div>
         <div className="mini-panel px-3 py-2.5">
-          <p className="text-[10px] text-ink-3 uppercase tracking-wide">Top holding</p>
+          <p className="text-[11px] text-ink-3 uppercase tracking-wide">Top holding</p>
           <p className={`text-[13px] font-semibold tabular-nums mt-1 ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-ink'}`}>
             {topHoldingPct}%
           </p>
         </div>
         <div className="mini-panel px-3 py-2.5">
-          <p className="text-[10px] text-ink-3 uppercase tracking-wide">Diversify</p>
+          <p className="text-[11px] text-ink-3 uppercase tracking-wide">Diversify</p>
           <p className={`text-[13px] font-semibold tabular-nums mt-1 ${divScore}`}>{diversificationScore}/100</p>
         </div>
       </div>
@@ -158,8 +158,8 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
           {/* Concentration signal */}
           <div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] text-ink-3">Allocation health</p>
-              <p className={`text-[10px] font-semibold ${concColor}`}>{concentrationLabel}</p>
+              <p className="text-[11px] text-ink-3">Allocation health</p>
+              <p className={`text-[11px] font-semibold ${concColor}`}>{concentrationLabel}</p>
             </div>
             <p className="text-[11px] text-ink-2 mt-0.5 leading-relaxed">
               {totalPortfolio <= 0
@@ -174,8 +174,8 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
           {/* Deployment signal */}
           <div>
             <div className="flex items-center justify-between gap-2">
-              <p className="text-[10px] text-ink-3">Deployment</p>
-              <p className={`text-[10px] font-semibold ${deployColor}`}>{deployLabel}</p>
+              <p className="text-[11px] text-ink-3">Deployment</p>
+              <p className={`text-[11px] font-semibold ${deployColor}`}>{deployLabel}</p>
             </div>
             <p className="text-[11px] text-ink-2 mt-0.5 leading-relaxed">
               {deploymentRate}% of income directed to investments this year.
@@ -202,7 +202,7 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
                     <p className="text-[11px] font-medium text-ink-2 truncate">{row.name}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <p className="text-[10px] text-ink-3 tabular-nums">{fmt(row.value)}</p>
+                    <p className="text-[11px] text-ink-3 tabular-nums">{fmt(row.value)}</p>
                     <p
                       className="text-[11px] font-semibold tabular-nums text-ink"
                       style={{ minWidth: '3ch', textAlign: 'right' }}
@@ -237,8 +237,8 @@ export default function YearlyPortfolioSnapshotCard({ data, vehicleData = [], is
       {/* ── Next action signal ──────────────────────────────────────── */}
       <div className="mini-panel p-3 mb-3">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-[10px] text-ink-3">Next move</p>
-          <p className={`text-[10px] font-semibold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-income-text'}`}>
+          <p className="text-[11px] text-ink-3">Next move</p>
+          <p className={`text-[11px] font-semibold tabular-nums ${topHoldingPct >= 55 ? 'text-warning-text' : 'text-income-text'}`}>
             Top 3 · {topThreePct}%
           </p>
         </div>

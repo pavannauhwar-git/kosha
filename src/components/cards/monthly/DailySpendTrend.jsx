@@ -27,7 +27,7 @@ function DailySpendTooltip({ active, payload, label }) {
           <span className="font-semibold tabular-nums text-expense-text">{fmt(Number(row.amount || 0))}</span>
         </div>
         {row.isAboveAvg && (
-          <p className="text-[10px] text-warning-text mt-0.5">Above spend-day average</p>
+          <p className="text-[11px] text-warning-text mt-0.5">Above spend-day average</p>
         )}
       </div>
     </div>
@@ -113,7 +113,7 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
           <p className="text-[11px] text-ink-3 mt-0.5">Expense distribution across the month, averaged over days you spent</p>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <span className="text-[10px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
+          <span className="text-[11px] px-2 py-1 rounded-pill font-semibold bg-kosha-surface-2 text-ink-2">
             {spendDays} active day{spendDays === 1 ? '' : 's'}
           </span>
           {onReviewExpenses && (
@@ -131,24 +131,24 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Avg per spend day</p>
+          <p className="text-[11px] text-ink-3">Avg per spend day</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{fmt(dailyAvg)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Peak day</p>
+          <p className="text-[11px] text-ink-3">Peak day</p>
           <p className="text-[13px] font-semibold tabular-nums text-expense-text">{peakDay ? fmt(peakDay.amount) : '—'}</p>
           {peakDayDate && onReviewPeakDay && (
             <button
               type="button"
               onClick={() => onReviewPeakDay(peakDayDate)}
-              className="text-[10px] font-semibold text-brand hover:underline mt-0.5"
+              className="text-[11px] font-semibold text-brand hover:underline mt-0.5"
             >
               Inspect day
             </button>
           )}
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Zero-spend days</p>
+          <p className="text-[11px] text-ink-3">Zero-spend days</p>
           <p className="text-[13px] font-semibold tabular-nums text-income-text">{zeroDays}</p>
         </div>
       </div>
@@ -159,14 +159,14 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
             <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--ds-border)" />
             <XAxis
               dataKey="day"
-              tick={{ fontSize: 9, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               interval="preserveStartEnd"
             />
             <YAxis
               tickFormatter={compactTick}
-              tick={{ fontSize: 10, fill: 'var(--ds-text-3)' }}
+              tick={{ fontSize: 11, fill: 'var(--ds-text-3)' }}
               axisLine={false}
               tickLine={false}
               width={34}
@@ -189,15 +189,15 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full" style={{ background: '#007FFF' }} />
-          <span className="text-[10px] text-ink-3">Below avg</span>
+          <span className="text-[11px] text-ink-3">Below avg</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full" style={{ background: '#E8453C' }} />
-          <span className="text-[10px] text-ink-3">Above avg</span>
+          <span className="text-[11px] text-ink-3">Above avg</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-0.5 border-t border-dashed border-ink-3" />
-          <span className="text-[10px] text-ink-3">Avg {fmt(dailyAvg)}/day</span>
+          <span className="text-[11px] text-ink-3">Avg {fmt(dailyAvg)}/day</span>
         </div>
       </div>
     </div>

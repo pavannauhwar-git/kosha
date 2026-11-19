@@ -95,21 +95,21 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Adherence</p>
+          <p className="text-[11px] text-ink-3">Adherence</p>
           <p className={`text-[13px] font-semibold tabular-nums ${analysis.adherencePct >= 80 ? 'text-income-text' : analysis.adherencePct >= 50 ? 'text-warning-text' : 'text-expense-text'}`}>
             {analysis.adherencePct}%
           </p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Current streak</p>
+          <p className="text-[11px] text-ink-3">Current streak</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{analysis.streak} mo</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Best streak</p>
+          <p className="text-[11px] text-ink-3">Best streak</p>
           <p className="text-[13px] font-semibold tabular-nums text-ink">{analysis.bestStreak} mo</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] text-ink-3">Avg deploy</p>
+          <p className="text-[11px] text-ink-3">Avg deploy</p>
           <p className="text-[13px] font-semibold tabular-nums text-invest-text">{fmt(analysis.avgMonthlyInvestment, true)}</p>
         </div>
       </div>
@@ -119,12 +119,12 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       <div className="rounded-card bg-kosha-surface-2 p-2.5" onMouseLeave={() => setHoveredMonth(null)}>
         <div className="h-4 mb-1">
           {hoveredBar ? (
-            <p className="text-[10px] text-ink-2 font-medium tabular-nums">
+            <p className="text-[11px] text-ink-2 font-medium tabular-nums">
               {hoveredBar.label} invested: {fmt(hoveredBar.amount)}
               {hoveredBar.invested ? ` (${hoveredBar.deployRate}%)` : ''}
             </p>
           ) : (
-            <p className="text-[10px] text-ink-3">Hover a month to see invested amount.</p>
+            <p className="text-[11px] text-ink-3">Hover a month to see invested amount.</p>
           )}
         </div>
 
@@ -154,7 +154,7 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
         <div className="flex gap-1 mt-1">
           {analysis.bars.map((bar) => (
             <div key={`label-${bar.label}`} className="flex-1 text-center">
-              <span className="text-[8px] text-ink-3">{bar.label}</span>
+              <span className="text-[11px] text-ink-3">{bar.label}</span>
             </div>
           ))}
         </div>
@@ -163,13 +163,13 @@ export default memo(function InvestmentConsistencyCard({ monthlyData, year }) {
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-sm bg-invest" />
-          <span className="text-[10px] text-ink-3">Invested</span>
+          <span className="text-[11px] text-ink-3">Invested</span>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-sm bg-kosha-border" />
-          <span className="text-[10px] text-ink-3">Missed</span>
+          <span className="text-[11px] text-ink-3">Missed</span>
         </div>
-        <span className="text-[10px] text-ink-3">
+        <span className="text-[11px] text-ink-3">
           Overall deploy: {analysis.overallDeployRate}% of income
         </span>
       </div>

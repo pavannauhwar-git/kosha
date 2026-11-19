@@ -76,9 +76,9 @@ export default function PortfolioMixDonut({
           border: '1px solid var(--ds-border)',
         }}
       >
-        <p className="text-[9px] text-ink-3 leading-none mb-0.5">{centerTop}</p>
+        <p className="text-[11px] text-ink-3 leading-none mb-0.5">{centerTop}</p>
         <p className="text-[12px] font-bold tabular-nums text-ink leading-tight px-1">{centerValue}</p>
-        <p className="text-[8px] text-ink-3 leading-none mt-0.5">{centerBottom}</p>
+        <p className="text-[11px] text-ink-3 leading-none mt-0.5">{centerBottom}</p>
       </div>
     </div>
   )
