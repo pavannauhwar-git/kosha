@@ -452,7 +452,7 @@ export default function Bills({
 
       const csv = toCsv(headers, csvRows)
       const date = todayStr()
-      downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
+      void downloadCsv(`kosha-${tab}-bills-${date}.csv`, csv)
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not export bills CSV.'))
     }
@@ -629,8 +629,10 @@ export default function Bills({
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────── */}
-      <div className="mb-2.5 grid grid-cols-2 gap-2">
+      <div className="mb-2.5 grid grid-cols-2 gap-2" role="group" aria-label="Show bills">
         <button
+          type="button"
+          aria-pressed={tab === 'pending'}
           onClick={() => setTab('pending')}
           className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
             ${tab === 'pending'
@@ -640,6 +642,8 @@ export default function Bills({
           Pending ({visiblePending.length})
         </button>
         <button
+          type="button"
+          aria-pressed={tab === 'paid'}
           onClick={() => setTab('paid')}
           className={`h-9 sm:h-10 w-full rounded-card text-[11px] sm:text-[12px] font-semibold transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform active:scale-[0.97]
             ${tab === 'paid'
@@ -700,31 +704,31 @@ export default function Bills({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3">
               <div className="mini-panel px-3 py-2.5">
-                <p className="text-[10px] text-ink-3 uppercase tracking-wide">Due pressure</p>
+                <p className="text-[11px] text-ink-3 uppercase tracking-wide">Due pressure</p>
                 <p className={`text-label font-semibold tabular-nums mt-1 ${bandTextClass(duePressureBand)}`}>
                   {duePressureIndex}/100
                 </p>
-                <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums">
                   {overdueSummary.count} overdue · {dueSoonCount} due soon
                 </p>
               </div>
 
               <div className="mini-panel px-3 py-2.5">
-                <p className="text-[10px] text-ink-3 uppercase tracking-wide">Recurring burden</p>
+                <p className="text-[11px] text-ink-3 uppercase tracking-wide">Recurring burden</p>
                 <p className={`text-label font-semibold tabular-nums mt-1 ${bandTextClass(recurringBurdenBand, 'text-ink')}`}>
                   {recurringBurden.ratioPct}%
                 </p>
-                <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums">
                   {recurringBurden.count} recurring · {fmt(recurringBurden.amount)}
                 </p>
               </div>
 
               <div className="mini-panel px-3 py-2.5">
-                <p className="text-[10px] text-ink-3 uppercase tracking-wide">Next 30 days</p>
+                <p className="text-[11px] text-ink-3 uppercase tracking-wide">Next 30 days</p>
                 <p className="text-label font-semibold tabular-nums mt-1 text-ink">
                   {fmt(forecast30Days.amount)}
                 </p>
-                <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums">
                   {forecast30Days.count} bill{forecast30Days.count === 1 ? '' : 's'}
                   {forecast30Days.peakWeek.count > 0 ? ` · Peak week ${forecast30Days.peakWeek.week}` : ''}
                 </p>
@@ -820,7 +824,7 @@ export default function Bills({
                   <div key={bill.id} ref={(node) => measureBillRow(index, node)}>
                     {showBucketHeader && (
                       <div className="px-1 mb-1 mt-2">
-                        <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[10px] font-semibold uppercase tracking-wide ${bucketLabelClass}`}>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-pill text-[11px] font-semibold uppercase tracking-wide ${bucketLabelClass}`}>
                           {bill._bucket === 'overdue' ? 'Overdue' : bill._bucket === 'dueSoon' ? 'Due this week' : 'Later'}
                         </span>
                       </div>
@@ -844,14 +848,14 @@ export default function Bills({
                               </div>
                               <p className="text-[17px] sm:text-lg font-semibold amt-expense mb-2">{fmt(+bill.amount)}</p>
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
+                                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${chipCls}`}>
                                   {dueLabel(days)}
                                 </span>
                                 {bill.is_recurring && (
-                                  <span className="text-[10px] sm:text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
+                                  <span className="text-[11px] text-ink-3 capitalize">{bill.recurrence}</span>
                                 )}
                                 {(bill.__optimistic || String(bill.id || '').startsWith('optimistic-')) && (
-                                  <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
                                     Syncing...
                                   </span>
                                 )}
@@ -870,7 +874,7 @@ export default function Bills({
                                 <p className="text-[13px] font-semibold text-ink truncate flex-1">
                                   {bill.description}
                                 </p>
-                                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
+                                <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
                                   Paid ✓
                                 </span>
                               </div>
@@ -1210,7 +1214,7 @@ export default function Bills({
             setShowAdd(true)
           }}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </button>
       )}
 

@@ -580,12 +580,17 @@ export default function Loans({
     if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
     if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
     if (!form.loan_date) { setFormErr('Select a loan date'); return }
+    const interestRate = String(form.interest_rate ?? '').trim() === '' ? 0 : Number(form.interest_rate)
+    if (!Number.isFinite(interestRate) || interestRate < 0 || interestRate > 100) {
+      setFormErr('Interest rate must be between 0 and 100% a year')
+      return
+    }
 
     const loanData = {
       direction: form.direction,
       counterparty: form.counterparty.trim(),
       amount: +form.amount,
-      interest_rate: form.interest_rate ? +form.interest_rate : 0,
+      interest_rate: Math.round(interestRate * 100) / 100,
       loan_date: form.loan_date,
       due_date: form.due_date || null,
       note: form.note.trim() || null,
@@ -685,7 +690,7 @@ export default function Loans({
       ])
       const csv = toCsv(headers, csvRows)
       const date = todayStr()
-      downloadCsv(`kosha-loans-${date}.csv`, csv)
+      void downloadCsv(`kosha-loans-${date}.csv`, csv)
     } catch (e) {
       pushToast(toToastMessage(e, 'Could not export CSV.'))
     }
@@ -767,14 +772,14 @@ export default function Loans({
             <div className="mt-3.5 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
               {exposureConcentrationSignal && (
                 <div className="mini-panel p-3.5">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Exposure concentration</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Exposure concentration</p>
                   <p className={`text-label font-semibold mt-1 ${bandTextClass(exposureConcentrationSignal.tone)}`}>
                     {exposureConcentrationSignal.topSharePct}%
                   </p>
                   <p className="text-caption text-ink-2 mt-1 truncate" title={exposureConcentrationSignal.top.name}>
                     {exposureConcentrationSignal.top.name}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     {exposureConcentrationSignal.counterparties} counterparties · {fmt(exposureConcentrationSignal.totalRemaining)}
                   </p>
                 </div>
@@ -782,14 +787,14 @@ export default function Loans({
 
               {dueRiskSignal && (
                 <div className="mini-panel p-3.5">
-                  <p className="text-[10px] text-ink-3 tracking-wide">At-risk due loans</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">At-risk due loans</p>
                   <p className={`text-label font-semibold mt-1 ${bandTextClass(dueRiskSignal.tone)}`}>
                     {dueRiskSignal.count} flagged
                   </p>
                   <p className="text-caption text-ink-2 mt-1 tabular-nums">
                     {fmt(dueRiskSignal.amountAtRisk)} at risk
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     {dueRiskSignal.overdueCount} overdue · {Math.max(0, dueRiskSignal.count - dueRiskSignal.overdueCount)} near due
                   </p>
                 </div>
@@ -797,14 +802,14 @@ export default function Loans({
 
               {settlementVelocitySignal && (
                 <div className="mini-panel p-3.5">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Settlement velocity</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Settlement velocity</p>
                   <p className="text-label font-semibold text-ink mt-1 tabular-nums">
                     {settlementVelocitySignal.settlementPct}% settled
                   </p>
                   <p className="text-caption text-ink-2 mt-1 tabular-nums">
                     Interest ≈ {fmt(settlementVelocitySignal.accruedTotal)} on current balances
                   </p>
-                  <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
+                  <p className={`text-[11px] mt-1 tabular-nums ${bandTextClass(settlementVelocitySignal.tone, 'text-ink-3')}`}>
                     {settlementVelocitySignal.accrualLoadPct == null
                       ? 'Accrual load builds once settlements begin'
                       : `Accrual load ${settlementVelocitySignal.accrualLoadPct}% of settled value`}
@@ -930,10 +935,10 @@ export default function Loans({
                               />
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-ink-3">
+                              <span className="text-[11px] text-ink-3">
                                 {fmt(+loan.amount_settled)} / {fmt(+loan.amount)}
                               </span>
-                              <span className={`text-[10px] font-semibold ${pct >= 100 ? 'text-income-text' : 'text-ink-3'}`}>
+                              <span className={`text-[11px] font-semibold ${pct >= 100 ? 'text-income-text' : 'text-ink-3'}`}>
                                 {pct}%
                               </span>
                             </div>
@@ -941,22 +946,22 @@ export default function Loans({
 
                           {/* Meta chips */}
                           <div className="flex items-center gap-2 flex-wrap">
-                            <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                            <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
                               {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
                             </span>
                             {loan.due_date && days !== null && (
-                              <span className={`text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
+                              <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-pill ${dueChipClass(days)}`}>
                                 {dueLabel(days)}
                               </span>
                             )}
                             {loan.interest_rate > 0 && (
-                              <span className="text-[10px] sm:text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
+                              <span className="text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
                             )}
                             {loan.interest_rate === 0 && (
-                              <span className="text-[10px] sm:text-[11px] text-ink-3">0% interest</span>
+                              <span className="text-[11px] text-ink-3">0% interest</span>
                             )}
                             {isOptimistic && (
-                              <span className="text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
+                              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-pill bg-warning-bg text-warning-text">
                                 Syncing…
                               </span>
                             )}
@@ -1027,7 +1032,7 @@ export default function Loans({
                             <p className="text-[13px] font-semibold text-ink truncate flex-1">
                               {loan.counterparty}
                             </p>
-                            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
+                            <span className="text-[11px] font-semibold px-1.5 py-0.5 rounded-pill bg-income-bg text-income-text border border-income-border shrink-0">
                               Settled ✓
                             </span>
                             {!isViewingPartner && (
@@ -1069,16 +1074,16 @@ export default function Loans({
 
                           {/* Date + interest chips */}
                           <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                            <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
                               {loan.direction === 'given' ? 'Given' : 'Taken'} {fmtDate(loan.loan_date)}
                             </span>
                             {loan.due_date && (
-                              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
+                              <span className="text-[11px] font-medium px-1.5 py-0.5 rounded-pill bg-kosha-surface-2 text-ink-3 border border-kosha-border">
                                 Due {fmtDate(loan.due_date)}
                               </span>
                             )}
                             {loan.interest_rate > 0 && (
-                              <span className="text-[10px] text-ink-3">{loan.interest_rate}%/yr</span>
+                              <span className="text-[11px] text-ink-3">{loan.interest_rate}%/yr</span>
                             )}
                           </div>
 
@@ -1390,7 +1395,7 @@ export default function Loans({
             setShowAdd(true)
           }}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </button>
       )}
 

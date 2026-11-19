@@ -16,7 +16,8 @@ import PartnerViewBanner from '../components/common/PartnerViewBanner'
 import { getAuthUserId } from '../lib/authStore'
 import { useActiveWallet } from '../lib/walletStore'
 import { useUserCategories } from '../hooks/useUserCategories'
-import { CATEGORIES, PAYMENT_MODES, getCategoriesForType } from '../lib/categories'
+import { CATEGORIES, PAYMENT_MODES, getCategoriesForType, getTransactionFilterOptions } from '../lib/categories'
+import CreateCategorySheet from '../components/categories/CreateCategorySheet'
 import { groupByDate, dateLabel, fmt } from '../lib/utils'
 import { bandTextClass, scoreHealthBand, scoreRiskBand } from '../lib/insightBands'
 
@@ -47,7 +48,9 @@ const TXN_GUIDE_HINT_KEY = 'kosha:dismiss-guide-transactions-v1'
 const SWIPE_HINT_DISMISSED_KEY = 'kosha:swipe-delete-hint-dismissed-v1'
 const SWIPE_HINT_LEARNED_KEY = 'kosha:swipe-delete-hint-learned-v1'
 const SWIPE_HINT_NUDGED_KEY = 'kosha:swipe-delete-hint-nudged-v1'
-const FILTER_URL_KEYS = ['month', 'day', 'type', 'category', 'payment', 'q', 'linked_loan', 'linked_bill', 'linked_split_expense', 'linked_split_settlement']
+const FILTER_URL_KEYS = ['month', 'day', 'range', 'type', 'category', 'payment', 'q', 'linked_loan', 'linked_bill', 'linked_split_expense', 'linked_split_settlement']
+// Presets with no date in the URL of their own; `range` keeps them on reload and back.
+const URL_RANGE_PRESETS = new Set(['7d', 'month', 'prev-month'])
 
 
 
@@ -77,7 +80,7 @@ export default function Transactions() {
   const [showGuideHint, setShowGuideHint] = useState(true)
   const [showSwipeHint, setShowSwipeHint] = useState(false)
   const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
-  const [, setShowCreateCategory] = useState(false)
+  const [showCreateCategory, setShowCreateCategory] = useState(false)
   const [searchParams, setSearchParams] = useSearchParams()
   const activeWalletUserId = useActiveWallet()
   const isViewingPartner = !!activeWalletUserId && activeWalletUserId !== getAuthUserId()
@@ -93,16 +96,16 @@ export default function Transactions() {
   const linkedSplitExpenseFilter = searchParams.get('linked_split_expense') || null
   const linkedSplitSettlementFilter = searchParams.get('linked_split_settlement') || null
 
+  // Router updates run in a transition, after the filter state changes that
+  // come with them, so the URL sync effect below would write the old linked
+  // params straight back. It drops them instead, in the same URL write.
+  const dropLinkedOnSyncRef = useRef(false)
+  const [linkedClearRequest, setLinkedClearRequest] = useState(0)
   const clearLinkedFilters = useCallback(() => {
     if (!linkedLoanFilter && !linkedBillFilter && !linkedSplitExpenseFilter && !linkedSplitSettlementFilter) return
-    const next = new URLSearchParams(searchParams)
-    next.delete('linked_loan')
-    next.delete('linked_bill')
-    next.delete('linked_split_expense')
-    next.delete('linked_split_settlement')
-    internalUrlUpdateRef.current = true
-    setSearchParams(next, { replace: true })
-  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter, searchParams, setSearchParams])
+    dropLinkedOnSyncRef.current = true
+    setLinkedClearRequest((n) => n + 1)
+  }, [linkedLoanFilter, linkedBillFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   function handleDatePreset(nextPreset) {
     clearLinkedFilters()
@@ -183,10 +186,12 @@ export default function Transactions() {
   const { customCategories } = useUserCategories()
   const filterCategories = useMemo(() => {
     void customCategories
-    return getCategoriesForType(typeFilter === 'all' ? undefined : typeFilter)
+    return getTransactionFilterOptions(typeFilter === 'all' ? undefined : typeFilter)
   }, [typeFilter, customCategories])
+  const filterByVehicle = typeFilter === 'investment'
   const getCategoryLabel = useCallback((categoryId) => {
     if (!categoryId) return 'All categories'
+    if (filterByVehicle) return categoryId
 
     const pools = [
       ...getCategoriesForType('expense'),
@@ -197,7 +202,7 @@ export default function Transactions() {
 
     const found = pools.find((item) => item.id === categoryId)
     return found?.label || 'Custom category'
-  }, [])
+  }, [filterByVehicle])
 
   const getPaymentModeLabel = useCallback((modeId) => {
     if (!modeId) return 'All payment modes'
@@ -209,7 +214,7 @@ export default function Transactions() {
 
   function handleTypeFilter(id) {
     setTypeFilter(id)
-    const nextCategories = getCategoriesForType(id === 'all' ? undefined : id)
+    const nextCategories = getTransactionFilterOptions(id === 'all' ? undefined : id)
     const isCurrentCategoryAllowed = !catFilter || nextCategories.some((cat) => cat.id === catFilter)
     if (!isCurrentCategoryAllowed) setCatFilter('')
     setDisplayCount(50)
@@ -225,9 +230,12 @@ export default function Transactions() {
     setDisplayCount(50)
   }
 
+  const categoryQueryFilter = (!filterByVehicle && catFilter) || undefined
+  const vehicleQueryFilter = (filterByVehicle && catFilter) || undefined
   const { data, total, loading: txnLoading, fetching: txnFetching, error: txnError, refetch: refetchTxns } = useTransactions({
     type: typeFilter === 'all' ? undefined : typeFilter,
-    category: catFilter || undefined,
+    category: categoryQueryFilter,
+    vehicle: vehicleQueryFilter,
     paymentMode: paymentModeFilter || undefined,
     search: debouncedSearch || undefined,
     startDate,
@@ -240,10 +248,11 @@ export default function Transactions() {
     withCount: true,
   })
 
-  const shouldFetchSignalAggregates = total > data.length
-  const { data: signalAggregates } = useTransactionSignalAggregates({
+  // The aggregates RPC can't filter by vehicle; the loaded rows stand in.
+  const shouldFetchSignalAggregates = total > data.length && !vehicleQueryFilter
+  const { data: signalAggregatesData } = useTransactionSignalAggregates({
     type: typeFilter === 'all' ? undefined : typeFilter,
-    category: catFilter || undefined,
+    category: categoryQueryFilter,
     paymentMode: paymentModeFilter || undefined,
     search: debouncedSearch || undefined,
     startDate,
@@ -254,6 +263,7 @@ export default function Transactions() {
     linkedSplitSettlementId: linkedSplitSettlementFilter,
     enabled: shouldFetchSignalAggregates,
   })
+  const signalAggregates = vehicleQueryFilter ? undefined : signalAggregatesData
 
   const groups = useMemo(() => {
     const grouped = groupByDate(data)
@@ -539,6 +549,7 @@ export default function Transactions() {
 
     const monthParam = parseMonthInput(searchParams.get('month'))
     const dayParam = parseIsoDateInput(searchParams.get('day'))
+    const rangeParam = String(searchParams.get('range') || '').trim()
     const typeParam = String(searchParams.get('type') || '').trim()
     const resolvedType = validTypeIds.has(typeParam) ? typeParam : 'all'
     const categoryParam = String(searchParams.get('category') || '').trim()
@@ -550,7 +561,7 @@ export default function Transactions() {
     setPaymentModeFilter(resolvedPaymentMode)
     setSearch(queryParam)
 
-    const allowedCategories = getCategoriesForType(resolvedType === 'all' ? undefined : resolvedType)
+    const allowedCategories = getTransactionFilterOptions(resolvedType === 'all' ? undefined : resolvedType)
     const categoryAllowed = !categoryParam || allowedCategories.some((item) => item.id === categoryParam)
     setCatFilter(categoryAllowed ? categoryParam : '')
 
@@ -562,6 +573,9 @@ export default function Transactions() {
       setSelectedMonth(normalizedMonth)
       setForcedDateRange(null)
       setDatePreset('custom-month')
+    } else if (URL_RANGE_PRESETS.has(rangeParam)) {
+      setForcedDateRange(null)
+      setDatePreset(rangeParam)
     } else {
       // If we are in a linked entity view, we let Phase 2 manage the forcedDateRange.
       // Otherwise, we clear it as the URL has no specific date context.
@@ -570,9 +584,9 @@ export default function Transactions() {
         setForcedDateRange(null)
       }
 
-      // Only reset to 'all' if we were on a custom month or specific day,
+      // Only reset to 'all' if we were on a month, range or specific day,
       // and the URL no longer has those specific params.
-      if (datePreset === 'custom-month' || (forcedDateRange && !hasLinkedFilter)) {
+      if (datePreset === 'custom-month' || URL_RANGE_PRESETS.has(datePreset) || (forcedDateRange && !hasLinkedFilter)) {
         setDatePreset('all')
       }
     }
@@ -582,6 +596,8 @@ export default function Transactions() {
   }, [searchParams, linkedBillFilter, linkedLoanFilter, linkedSplitExpenseFilter, linkedSplitSettlementFilter])
 
   useEffect(() => {
+    const dropLinked = dropLinkedOnSyncRef.current
+    dropLinkedOnSyncRef.current = false
     setSearchParams((prev) => {
       const currentSearchParams = prev
       const nextParams = new URLSearchParams()
@@ -593,6 +609,8 @@ export default function Transactions() {
         if (parsed) {
           nextParams.set('month', `${parsed.year}-${String(parsed.month).padStart(2, '0')}`)
         }
+      } else if (URL_RANGE_PRESETS.has(datePreset) && !forcedDateRange) {
+        nextParams.set('range', datePreset)
       }
 
       if (typeFilter !== 'all') nextParams.set('type', typeFilter)
@@ -605,10 +623,12 @@ export default function Transactions() {
       const focusParam = String(currentSearchParams.get('focus') || '').trim()
       if (focusParam) nextParams.set('focus', focusParam)
 
-      if (linkedLoanFilter) nextParams.set('linked_loan', linkedLoanFilter)
-      if (linkedBillFilter) nextParams.set('linked_bill', linkedBillFilter)
-      if (linkedSplitExpenseFilter) nextParams.set('linked_split_expense', linkedSplitExpenseFilter)
-      if (linkedSplitSettlementFilter) nextParams.set('linked_split_settlement', linkedSplitSettlementFilter)
+      if (!dropLinked) {
+        if (linkedLoanFilter) nextParams.set('linked_loan', linkedLoanFilter)
+        if (linkedBillFilter) nextParams.set('linked_bill', linkedBillFilter)
+        if (linkedSplitExpenseFilter) nextParams.set('linked_split_expense', linkedSplitExpenseFilter)
+        if (linkedSplitSettlementFilter) nextParams.set('linked_split_settlement', linkedSplitSettlementFilter)
+      }
 
       const mergedParams = new URLSearchParams(currentSearchParams)
       FILTER_URL_KEYS.forEach((key) => mergedParams.delete(key))
@@ -639,6 +659,7 @@ export default function Transactions() {
     linkedLoanFilter,
     linkedSplitExpenseFilter,
     linkedSplitSettlementFilter,
+    linkedClearRequest,
   ])
 
 
@@ -803,7 +824,8 @@ export default function Transactions() {
   const { exportCSV, isExporting } = useTransactionExporter({
     activeWalletUserId,
     typeFilter,
-    catFilter,
+    catFilter: categoryQueryFilter || '',
+    vehicleFilter: vehicleQueryFilter || '',
     paymentModeFilter,
     debouncedSearch,
     startDate,
@@ -926,7 +948,7 @@ export default function Transactions() {
             paymentModeFilter={paymentModeFilter}
             handlePaymentModeFilter={handlePaymentModeFilter}
             getPaymentModeLabel={getPaymentModeLabel}
-            setShowCreateCategory={setShowCreateCategory}
+            setShowCreateCategory={isViewingPartner ? undefined : setShowCreateCategory}
             filterCategories={filterCategories}
           />
           </div>
@@ -960,7 +982,7 @@ export default function Transactions() {
 
         {showSwipeHint && groups.length > 0 && (
           <div className="hint-card flex items-start gap-2.5 mb-4">
-            <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+            <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
               i
             </div>
             <p className="text-[11px] text-ink-2 leading-relaxed flex-1 min-w-0">
@@ -1100,28 +1122,28 @@ export default function Transactions() {
             <div className="p-4">
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Rows</p>
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Rows</p>
                   <p className="text-[15px] font-semibold tabular-nums text-ink mt-1">
                     {data.length}/{total}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">Loaded / matching</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Loaded / matching</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Range</p>
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Range</p>
                   <p className="text-[12px] sm:text-[13px] font-semibold text-ink mt-1 leading-tight">{activeDatePresetLabel}</p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">Timeline window</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Timeline window</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Income</p>
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Income</p>
                   <p className="text-[13px] font-semibold tabular-nums text-income-text mt-1">{fmt(visibleSummary.income)}</p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">Loaded rows</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Loaded rows</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] uppercase tracking-wide text-ink-3">Net flow</p>
+                  <p className="text-[11px] uppercase tracking-wide text-ink-3">Net flow</p>
                   <p className={`text-[13px] font-semibold tabular-nums mt-1 ${visibleSummary.net >= 0 ? 'text-income-text' : 'text-expense-text'}`}>
                     {visibleSummary.net >= 0 ? '+' : '-'}{fmt(Math.abs(visibleSummary.net))}
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-0.5">Income - outflow</p>
+                  <p className="text-[11px] text-ink-3 mt-0.5">Income - outflow</p>
                 </div>
               </div>
 
@@ -1129,14 +1151,14 @@ export default function Transactions() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-2.5">
                   {timelineActivitySignal && (
                     <div className="mini-panel px-3 py-2.5">
-                      <p className="text-[10px] uppercase tracking-wide text-ink-3">Activity density</p>
+                      <p className="text-[11px] uppercase tracking-wide text-ink-3">Activity density</p>
                       <p className="text-[13px] font-semibold text-ink mt-1 tabular-nums">
                         {timelineActivitySignal.txnsPerActiveDay.toFixed(1)} txns / active day
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-0.5">
+                      <p className="text-[11px] text-ink-3 mt-0.5">
                         {timelineActivitySignal.activeDays}/{timelineActivitySignal.spanDays} days active ({timelineActivitySignal.densityPct}%)
                       </p>
-                      <p className={`text-[10px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
+                      <p className={`text-[11px] font-semibold mt-1 ${bandTextClass(timelineActivitySignal.band)}`}>
                         {timelineActivitySignal.band === 'healthy' ? 'Frequent logging' : timelineActivitySignal.band === 'watch' ? 'Steady logging' : 'Sparse logging'}
                       </p>
                       <button
@@ -1151,15 +1173,15 @@ export default function Transactions() {
 
                   {paymentModeSignal && (
                     <div className="mini-panel px-3 py-2.5">
-                      <p className="text-[10px] uppercase tracking-wide text-ink-3">Payment mode mix</p>
+                      <p className="text-[11px] uppercase tracking-wide text-ink-3">Payment mode mix</p>
                       <p className={`text-[13px] font-semibold mt-1 ${bandTextClass(paymentModeSignal.band, 'text-ink')}`}>
                         {paymentModeSignal.top.label}
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                      <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums">
                         {paymentModeSignal.top.pct}% of {paymentModeSignal.scopeLabel} ({paymentModeSignal.top.count})
                       </p>
                       {paymentModeSignal.secondary && (
-                        <p className="text-[10px] text-ink-3 mt-1">
+                        <p className="text-[11px] text-ink-3 mt-1">
                           Next: {paymentModeSignal.secondary.label} ({paymentModeSignal.secondary.pct}%)
                         </p>
                       )}
@@ -1175,14 +1197,14 @@ export default function Transactions() {
 
                   {expenseFrequencySignal && (
                     <div className="mini-panel px-3 py-2.5">
-                      <p className="text-[10px] uppercase tracking-wide text-ink-3">Expense frequency</p>
+                      <p className="text-[11px] uppercase tracking-wide text-ink-3">Expense frequency</p>
                       <p className="text-[13px] font-semibold text-ink mt-1 truncate" title={expenseFrequencySignal.top.label}>
                         {expenseFrequencySignal.top.label}
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-0.5 tabular-nums">
+                      <p className="text-[11px] text-ink-3 mt-0.5 tabular-nums">
                         {expenseFrequencySignal.top.count} of {expenseFrequencySignal.expenseCount} expense rows
                       </p>
-                      <p className={`text-[10px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
+                      <p className={`text-[11px] mt-1 tabular-nums ${bandTextClass(expenseFrequencySignal.band, 'text-ink-3')}`}>
                         Top-3 categories cover {expenseFrequencySignal.concentrationPct}%
                       </p>
                       <button
@@ -1238,12 +1260,7 @@ export default function Transactions() {
                 {(hasActiveFilters || linkedLoanFilter) ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      clearAllFilters()
-                      const next = new URLSearchParams(searchParams)
-                      next.delete('linked_loan')
-                      setSearchParams(next, { replace: true })
-                    }}
+                    onClick={clearAllFilters}
                     className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
                   >
                     Clear filters
@@ -1266,7 +1283,7 @@ export default function Transactions() {
             setEditTxn(null); setAddType('expense'); setShowAdd(true)
           }}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </button>
       )}
 
@@ -1279,6 +1296,21 @@ export default function Transactions() {
           onClose={() => { setShowAdd(false); setEditTxn(null); setDuplicateTxn(null) }}
           editTxn={editTxn}
           initialType={addType}
+        />
+      )}
+
+      {showCreateCategory && !isViewingPartner && (
+        <CreateCategorySheet
+          type={typeFilter === 'all' ? 'expense' : typeFilter}
+          onClose={() => setShowCreateCategory(false)}
+          onSaved={(saved) => {
+            const savedType = saved?.type
+            if (savedType === 'investment' && typeFilter === 'investment' && saved?.label) {
+              handleCatFilter(saved.label)
+            } else if (savedType && savedType === typeFilter && saved?.id) {
+              handleCatFilter(saved.id)
+            }
+          }}
         />
       )}
     </PageHeaderPage>

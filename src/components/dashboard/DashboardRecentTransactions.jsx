@@ -1,4 +1,4 @@
-import { memo, useMemo, useState, useEffect, useCallback } from 'react'
+import { memo, useMemo, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ArrowRight, X } from '@phosphor-icons/react'
 import TransactionItem from '../transactions/TransactionItem'
@@ -29,30 +29,29 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
   onDuplicate,
 }) {
   const navigate = useNavigate()
-  const [showSwipeHint, setShowSwipeHint] = useState(false)
-  const [triggerSwipeNudge, setTriggerSwipeNudge] = useState(false)
-
-  useEffect(() => {
-    const dismissed = readLocalStorage(SWIPE_HINT_DISMISSED_KEY, '0') === '1'
-    const learned = readLocalStorage(SWIPE_HINT_LEARNED_KEY, '0') === '1'
-    const nudged = readLocalStorage(SWIPE_HINT_NUDGED_KEY, '0') === '1'
-
-    setShowSwipeHint(!dismissed && !learned)
-    setTriggerSwipeNudge(!nudged)
-  }, [])
+  const [hintPending, setHintPending] = useState(() => (
+    readLocalStorage(SWIPE_HINT_DISMISSED_KEY, '0') !== '1'
+    && readLocalStorage(SWIPE_HINT_LEARNED_KEY, '0') !== '1'
+  ))
+  const [nudgePending, setNudgePending] = useState(() => readLocalStorage(SWIPE_HINT_NUDGED_KEY, '0') !== '1')
+  // Rows can't be swiped in a partner's view-only wallet, so the hint and the
+  // one-time nudge wait for the user's own wallet.
+  const swipeEnabled = Boolean(onDelete || onDuplicate)
+  const showSwipeHint = swipeEnabled && hintPending
+  const triggerSwipeNudge = swipeEnabled && nudgePending
 
   const dismissSwipeHint = useCallback(() => {
-    setShowSwipeHint(false)
+    setHintPending(false)
     writeLocalStorage(SWIPE_HINT_DISMISSED_KEY, '1')
   }, [])
 
   const handleSwipeHintLearned = useCallback(() => {
-    setShowSwipeHint(false)
+    setHintPending(false)
     writeLocalStorage(SWIPE_HINT_LEARNED_KEY, '1')
   }, [])
 
   const handleAutoNudgeDone = useCallback(() => {
-    setTriggerSwipeNudge(false)
+    setNudgePending(false)
     writeLocalStorage(SWIPE_HINT_NUDGED_KEY, '1')
   }, [])
 
@@ -153,26 +152,26 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
       <div className="grid grid-cols-3 gap-2 mb-2.5">
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Rows</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Rows</p>
           <p className="text-[13px] font-semibold text-ink tabular-nums mt-0.5">{visibleRecent.length}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Inflow</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Inflow</p>
           <p className="text-[13px] font-semibold text-income-text tabular-nums mt-0.5">{fmt(summary.inflow)}</p>
         </div>
         <div className="rounded-card bg-kosha-surface-2 p-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Outflow</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Outflow</p>
           <p className="text-[13px] font-semibold text-expense-text tabular-nums mt-0.5">{fmt(summary.outflow)}</p>
         </div>
       </div>
 
       {outflowInsights && (
         <div className="mini-panel px-3 py-2.5 mb-2.5">
-          <p className="text-[10px] tracking-wide text-ink-3">Recent outflow cues</p>
+          <p className="text-[11px] tracking-wide text-ink-3">Recent outflow cues</p>
           <p className="text-[11px] text-ink-2 mt-1">
             Top driver: <span className="font-semibold">{outflowInsights.topLabel}</span> · {fmt(outflowInsights.topAmount)}
           </p>
-          <p className="text-[10px] text-ink-3 mt-1">
+          <p className="text-[11px] text-ink-3 mt-1">
             Largest row: {outflowInsights.largestLabel} · {fmt(outflowInsights.largestAmount)}
           </p>
         </div>
@@ -180,7 +179,7 @@ const DashboardRecentTransactions = memo(function DashboardRecentTransactions({
 
       {showSwipeHint && (
         <div className="hint-card flex items-start gap-2.5 mb-2.5">
-          <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+          <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
             i
           </div>
           <div className="min-w-0 flex-1">

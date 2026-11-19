@@ -122,7 +122,7 @@ export default function TransactionFilterBar({
                       'Split settlement'}
               </span>
               {total > 0 && (
-                <span className="text-[10px] opacity-60 font-medium tabular-nums">· {total} records</span>
+                <span className="text-[11px] opacity-60 font-medium tabular-nums">· {total} records</span>
               )}
               <button
                 onClick={clearLinkedFilters}
@@ -230,7 +230,7 @@ export default function TransactionFilterBar({
                 />
               </div>
 
-              <p className="text-[10px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>
+              <p className="text-[11px] text-ink-3 mt-1">Filtering: {formatMonthInputLabel(selectedMonth)}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -344,20 +344,22 @@ export default function TransactionFilterBar({
                 ))}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-kosha-border flex items-center justify-between">
-                <p className="text-[10px] text-ink-3">Missing a category?</p>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCats(false)
-                    setShowCreateCategory(true)
-                  }}
-                  className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
-                >
-                  <Plus size={11} />
-                  Add new
-                </button>
-              </div>
+              {setShowCreateCategory && (
+                <div className="mt-3 pt-3 border-t border-kosha-border flex items-center justify-between">
+                  <p className="text-[11px] text-ink-3">Missing a category?</p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCats(false)
+                      setShowCreateCategory(true)
+                    }}
+                    className="chip-control chip-control-sm bg-kosha-surface text-ink-2 border-kosha-border hover:bg-kosha-surface-2"
+                  >
+                    <Plus size={11} />
+                    Add new
+                  </button>
+                </div>
+              )}
             </motion.div>
           )}
 

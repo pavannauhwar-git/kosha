@@ -60,7 +60,7 @@ function DashboardSectionCue({ title, subtitle }) {
     <div className="px-0.5">
       <p className="section-label">{title}</p>
       {subtitle && (
-        <p className="text-[10px] text-ink-3 mt-0.5">{subtitle}</p>
+        <p className="text-[11px] text-ink-3 mt-0.5">{subtitle}</p>
       )}
     </div>
   )
@@ -583,7 +583,7 @@ export default function Dashboard() {
           </h1>
           {/* Absolutely positioned — takes zero layout space, no shift */}
           <p
-            className="absolute right-0 top-0 text-[10px] text-ink-4 tracking-wide"
+            className="absolute right-0 top-0 text-[11px] text-ink-4 tracking-wide"
             style={{
               opacity: isBackgroundFetching ? 1 : 0,
               transition: 'opacity 200ms cubic-bezier(0.2, 0, 0, 1)',
@@ -628,10 +628,10 @@ export default function Dashboard() {
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
-                  <p className="text-[10px] text-ink-3 tracking-wide">Attention inbox</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Attention inbox</p>
                   <p className="text-[13px] font-semibold text-ink mt-0.5">Top actions to protect this month</p>
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border tabular-nums">
+                <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border tabular-nums">
                   {attentionItems.length} open
                 </span>
               </div>
@@ -646,7 +646,7 @@ export default function Dashboard() {
                       <p className={`text-[12px] font-semibold ${item.tone === 'high' ? 'text-warning-text' : item.tone === 'watch' ? 'text-brand' : 'text-ink'}`}>
                         {item.title}
                       </p>
-                      <p className="text-[10px] text-ink-3 mt-0.5 leading-relaxed">{item.message}</p>
+                      <p className="text-[11px] text-ink-3 mt-0.5 leading-relaxed">{item.message}</p>
                     </div>
                     <Button
                       variant={item.tone === 'high' ? 'primary' : 'secondary'}
@@ -668,15 +668,15 @@ export default function Dashboard() {
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
-                  <p className="text-[10px] text-ink-3 tracking-wide">Attention inbox</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Attention inbox</p>
                   <p className="text-[13px] font-semibold text-ink mt-0.5">No urgent alerts right now</p>
                 </div>
-                <span className="text-[10px] font-semibold px-2 py-1 rounded-pill bg-income-bg text-income-text border border-income-border">
+                <span className="text-[11px] font-semibold px-2 py-1 rounded-pill bg-income-bg text-income-text border border-income-border">
                   All clear
                 </span>
               </div>
 
-              <p className="text-[10px] text-ink-3 leading-relaxed mb-2.5">
+              <p className="text-[11px] text-ink-3 leading-relaxed mb-2.5">
                 Keep momentum by reviewing this month&apos;s expenses and upcoming bills.
               </p>
 
@@ -703,7 +703,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {isNewUser && (
+        {isNewUser && !isViewingPartner && (
           <div className="fade-up fade-up-2">
             <div className="card p-4 border-0">
               <p className="section-label mb-1.5">Start here</p>
@@ -739,12 +739,12 @@ export default function Dashboard() {
                   <div className="w-7 h-7 rounded-lg bg-income-bg flex items-center justify-center">
                     <Wallet size={14} className="text-income-text" />
                   </div>
-                  <p className="text-[10px] text-ink-3 tracking-wide">Spendable today</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Spendable today</p>
                 </div>
                 <p className="text-[18px] font-bold tabular-nums text-ink tracking-tight">
                   {fmt(spendableToday.daily)}
                 </p>
-                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                   {fmt(spendableToday.remaining)} left this month
                 </p>
               </div>
@@ -755,12 +755,12 @@ export default function Dashboard() {
                     <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${burnRate.ahead ? 'bg-warning-bg' : 'bg-income-bg'}`}>
                       <TrendDown size={14} className={burnRate.ahead ? 'text-warning-text' : 'text-income-text'} />
                     </div>
-                    <p className="text-[10px] text-ink-3 tracking-wide">Burn rate</p>
+                    <p className="text-[11px] text-ink-3 tracking-wide">Burn rate</p>
                   </div>
                   <p className={`text-[18px] font-bold tabular-nums tracking-tight ${burnRate.ahead ? 'text-warning-text' : 'text-ink'}`}>
                     {burnRate.paceActual}%
                   </p>
-                  <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                  <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                     Expected {burnRate.paceExpected}% by day {dayOfMonth}
                   </p>
                 </div>
@@ -783,8 +783,8 @@ export default function Dashboard() {
           <div className="card-spring-in fade-up-5">
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
-                <p className="text-[10px] text-ink-3 tracking-wide">Runway balance</p>
-                <span className={`text-[10px] font-semibold px-2 py-1 rounded-pill ${runwayBalance.band === 'high' ? 'bg-warning-bg text-warning-text' : runwayBalance.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-income-bg text-income-text'}`}>
+                <p className="text-[11px] text-ink-3 tracking-wide">Runway balance</p>
+                <span className={`text-[11px] font-semibold px-2 py-1 rounded-pill ${runwayBalance.band === 'high' ? 'bg-warning-bg text-warning-text' : runwayBalance.band === 'watch' ? 'bg-brand-container text-brand' : 'bg-income-bg text-income-text'}`}>
                   {runwayBalance.band === 'high' ? 'Tight' : runwayBalance.band === 'watch' ? 'Watch' : 'Healthy'}
                 </span>
               </div>
@@ -792,7 +792,7 @@ export default function Dashboard() {
               <div className="mt-2.5 space-y-2.5">
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] text-ink-3">Days left</p>
+                    <p className="text-[11px] text-ink-3">Days left</p>
                     <p className="text-[11px] font-semibold tabular-nums text-ink">{daysRemaining}/{daysInMonth} ({runwayBalance.daysLeftPct}%)</p>
                   </div>
                   <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
@@ -802,7 +802,7 @@ export default function Dashboard() {
 
                 <div>
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[10px] text-ink-3">Money left</p>
+                    <p className="text-[11px] text-ink-3">Money left</p>
                     <p className="text-[11px] font-semibold tabular-nums text-ink">{fmt(spendableToday.remaining)} ({runwayBalance.moneyLeftPct}%)</p>
                   </div>
                   <div className="h-1.5 rounded-pill bg-kosha-surface-2 overflow-hidden">
@@ -814,7 +814,7 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              <p className="text-[10px] text-ink-3 mt-2">
+              <p className="text-[11px] text-ink-3 mt-2">
                 {runwayBalance.band === 'high'
                   ? 'Money runway is trailing time runway. Reduce optional spend until bars realign.'
                   : runwayBalance.band === 'watch'
@@ -830,7 +830,7 @@ export default function Dashboard() {
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Top spend pressure</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Top spend pressure</p>
                   <p className="text-[14px] font-semibold text-ink mt-1 truncate" title={categoryPressureSignal.label}>
                     {categoryPressureSignal.label}
                   </p>
@@ -852,7 +852,7 @@ export default function Dashboard() {
                 {categoryPressureSignal.sharePct}% of spend · {fmt(categoryPressureSignal.amount)}
               </p>
               {categoryPressureSignal.budgetPct != null && (
-                <p className="text-[10px] text-ink-3 mt-1 tabular-nums">
+                <p className="text-[11px] text-ink-3 mt-1 tabular-nums">
                   Budget usage: {categoryPressureSignal.budgetPct}%
                 </p>
               )}
@@ -874,7 +874,7 @@ export default function Dashboard() {
             <div className="card p-3.5 border-0">
               <div className="flex items-start justify-between gap-2 mb-2.5">
                 <div>
-                  <p className="text-[10px] text-ink-3 tracking-wide">Bills control center</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Bills control center</p>
                   <p className="text-[13px] font-semibold text-ink mt-0.5">{billsControlSubtitle}</p>
                 </div>
                 <Button
@@ -889,15 +889,15 @@ export default function Dashboard() {
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-2.5">
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Due in 7d</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Due in 7d</p>
                   <p className="text-[13px] font-semibold tabular-nums text-ink mt-0.5">{dueSoonCount}</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Due amount</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Due amount</p>
                   <p className="text-[13px] font-semibold tabular-nums text-warning-text mt-0.5">{fmt(dueSoonAmount)}</p>
                 </div>
                 <div className="mini-panel px-3 py-2.5 col-span-2 sm:col-span-1">
-                  <p className="text-[10px] text-ink-3 tracking-wide">Risk signal</p>
+                  <p className="text-[11px] text-ink-3 tracking-wide">Risk signal</p>
                   <p className={`text-[13px] font-semibold tabular-nums mt-0.5 ${(billClusterSignal?.overdueCount || 0) > 0 ? 'text-warning-text' : 'text-ink'}`}>
                     {(billClusterSignal?.overdueCount || 0) > 0
                       ? `${billClusterSignal.overdueCount} overdue`
@@ -917,7 +917,7 @@ export default function Dashboard() {
                       <div key={bill.id} className={`px-3 py-2.5 flex items-center justify-between gap-3 ${index !== upcomingBills.length - 1 ? 'border-b border-kosha-border' : ''}`}>
                         <div className="min-w-0 flex-1">
                           <p className="text-[12px] font-medium text-ink truncate">{bill.description}</p>
-                          <p className="text-[10px] text-ink-3 mt-0.5">Due {dueLabel}</p>
+                          <p className="text-[11px] text-ink-3 mt-0.5">Due {dueLabel}</p>
                         </div>
                         <p className="text-[12px] font-semibold tabular-nums text-warning-text shrink-0">{fmt(Number(bill.amount || 0))}</p>
                       </div>
@@ -958,7 +958,7 @@ export default function Dashboard() {
             setEditTxn(null); setAddType('expense'); setShowAdd(true)
           }}
         >
-          <Plus size={24} className="text-white" />
+          <Plus size={24} className="text-brand-on" />
         </button>
       )}
 

@@ -149,7 +149,7 @@ function SwipeManagePickerRow({
                      bg-brand-container active:scale-[0.96] active:opacity-80 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
           >
             <PencilSimple size={20} weight="bold" color="var(--c-brand)" />
-            <span className="text-[10px] font-semibold" style={{ color: 'var(--c-brand)' }}>
+            <span className="text-[11px] font-semibold" style={{ color: 'var(--c-brand)' }}>
               Edit
             </span>
           </button>
@@ -162,7 +162,7 @@ function SwipeManagePickerRow({
             style={{ backgroundColor: 'rgba(232,69,60,0.96)', color: 'rgba(255,255,255,1)' }}
           >
             <Trash size={18} weight="bold" color="currentColor" />
-            <span className="text-[10px] font-semibold" style={{ color: 'rgba(255,255,255,1)' }}>
+            <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,1)' }}>
               Delete
             </span>
           </button>
@@ -327,7 +327,7 @@ function CategoryPicker({
 
           {showSwipeHint && (
             <div className="hint-card flex items-start gap-2.5 mb-4">
-              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                 i
               </div>
               <div className="min-w-0 flex-1">
@@ -462,7 +462,7 @@ function VehiclePicker({
 
           {showSwipeHint && (
             <div className="hint-card flex items-start gap-2.5 mb-4">
-              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full bg-brand-container text-brand text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">
                 i
               </div>
               <div className="min-w-0 flex-1">
@@ -856,7 +856,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {isLinkedToSplitwise && (
             <div className="mb-5 p-3 bg-brand-container/30 border border-brand/10 rounded-card flex items-start gap-3">
-              <div className="w-5 h-5 rounded-full bg-brand text-white flex items-center justify-center shrink-0 mt-0.5">
+              <div className="w-5 h-5 rounded-full bg-brand text-brand-on flex items-center justify-center shrink-0 mt-0.5">
                 <Info size={12} weight="bold" />
               </div>
               <p className="text-[12px] text-brand-dark leading-relaxed">
@@ -884,7 +884,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
 
           {/* Amount */}
           <form onSubmit={(e) => { e.preventDefault(); handleSave(); }} className="flex flex-col min-w-0 pb-2">
-            <FormField error={error}>
+            <FormField>
               <div className="bg-transparent px-1 py-2 mb-4 flex items-center gap-2 border-b-2 border-kosha-border">
                 <span className={`text-2xl font-bold ${activeType?.color}`}>₹</span>
                 <input
@@ -1180,15 +1180,15 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
             {editTxn && linkedSplitExpenseId && (
               <div className="px-4 py-2 border-t border-kosha-border flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-brand-container flex items-center justify-center shrink-0">
-                  <span className="text-[10px] text-brand font-bold">🔗</span>
+                  <span className="text-[11px] text-brand font-bold">🔗</span>
                 </div>
                 <span className="text-[13px] text-ink-2 font-medium">Linked to a Splitwise group. Edits will sync automatically.</span>
               </div>
             )}
           </div>
 
-          {/* Error message */}
-          {error && <p className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
+          {/* Error message — the only place save and validation errors show */}
+          {error && <p role="alert" className="text-expense-text text-[13px] mb-3 px-1">{error}</p>}
 
           {/*
             Save button — the most important element.
