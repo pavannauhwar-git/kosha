@@ -118,6 +118,7 @@ export default function Settings() {
   const [deleteAccountText, setDeleteAccountText] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [deleteAccountError, setDeleteAccountError] = useState('')
+  const [deleteNeedsSignIn, setDeleteNeedsSignIn] = useState(false)
   const remindersPaused = !reminderPrefs.enabled
   const reminderMasterSwitchStyle = {
     '--md-switch-selected-track-color': 'var(--ds-primary)',
@@ -348,11 +349,22 @@ export default function Settings() {
     if (deleteAccountText.trim() !== 'DELETE' || deletingAccount) return
     setDeletingAccount(true)
     setDeleteAccountError('')
+    setDeleteNeedsSignIn(false)
     try {
       const { data, error } = await supabase.functions.invoke('delete-account', {
         body: { confirm: 'DELETE' },
       })
-      if (error || !data?.ok) throw error || new Error('Account deletion failed')
+      if (error) {
+        const body = error.context?.json ? await error.context.json().catch(() => null) : null
+        if (body?.error === 'reauth_required') {
+          setDeleteNeedsSignIn(true)
+          setDeleteAccountError('For your safety, deleting your account needs a recent sign-in. Sign in again, then delete it from Settings within 10 minutes.')
+          setDeletingAccount(false)
+          return
+        }
+        throw error
+      }
+      if (!data?.ok) throw new Error('Account deletion failed')
       await signOut()
       navigate('/login', { replace: true })
     } catch (error) {
@@ -871,6 +883,7 @@ export default function Settings() {
                 setShowDeleteAccount((prev) => !prev)
                 setDeleteAccountText('')
                 setDeleteAccountError('')
+                setDeleteNeedsSignIn(false)
               }}
               destructive
             />
@@ -901,6 +914,19 @@ export default function Settings() {
                   </Button>
                   {deleteAccountError && (
                     <p className="text-[12px] text-expense-text">{deleteAccountError}</p>
+                  )}
+                  {deleteNeedsSignIn && (
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      fullWidth
+                      onClick={async () => {
+                        await signOut()
+                        navigate('/login', { replace: true, state: { from: '/settings' } })
+                      }}
+                    >
+                      Sign in again
+                    </Button>
                   )}
                 </div>
               </>

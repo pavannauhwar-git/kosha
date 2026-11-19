@@ -1,7 +1,10 @@
-// Query-string keys whose values are secrets.
-const SENSITIVE_PARAMS = new Set([
-  'token', 'access_token', 'refresh_token', 'invite', 'splittoken', 'split_token',
-  'code', 'state', 'id_token', 'apikey',
+// Query-string keys whose values are safe to report. Every other value is
+// redacted: search text (`q`), repayment names and amounts, invite tokens and
+// sign-in codes all travel in app URLs.
+const SAFE_PARAMS = new Set([
+  'focus', 'tab', 'view', 'type', 'range', 'quality', 'payment', 'month', 'filter', 'day',
+  'category', 'reset', 'mode', 'next', 'source', 'repaymenttab', 'repaymenttype',
+  'linked_bill', 'linked_loan', 'linked_split_expense', 'linked_split_settlement',
 ])
 
 // Path segments that are themselves the secret (e.g. `/join/<token>`).
@@ -16,9 +19,9 @@ const API_PATH_RE = /\/(rest|functions|auth|storage)\/v1\//
 
 const PLACEHOLDER_BASE = 'http://kosha.local'
 
-// Take a path or path+search string and return a copy with token-bearing
-// query params and path segments replaced by `<redacted>`. Always returns a
-// string; never throws.
+// Take a path or path+search string and return a copy with token path segments
+// and every query value outside SAFE_PARAMS replaced by `<redacted>`. Always
+// returns a string; never throws.
 export function sanitizeRoute(rawRoute) {
   if (typeof rawRoute !== 'string' || rawRoute.length === 0) return rawRoute || ''
 
@@ -42,7 +45,7 @@ export function sanitizeRoute(rawRoute) {
       const params = new URLSearchParams(search.slice(1))
       let changed = false
       for (const key of Array.from(params.keys())) {
-        if (SENSITIVE_PARAMS.has(key.toLowerCase())) {
+        if (!SAFE_PARAMS.has(key.toLowerCase())) {
           params.set(key, '<redacted>')
           changed = true
         }
@@ -60,7 +63,7 @@ export function sanitizeRoute(rawRoute) {
 }
 
 // Absolute or relative URL. Drops the hash, redacts token path segments and
-// sensitive params, and drops the query string of Supabase API calls.
+// query values, and drops the query string of Supabase API calls.
 export function sanitizeUrl(rawUrl) {
   if (typeof rawUrl !== 'string') return rawUrl
   const isRelative = !/^https?:\/\//i.test(rawUrl)

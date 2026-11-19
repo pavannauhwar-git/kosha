@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '../context/AuthContext'
 import { resolvePostAuthPath as resolveInvitePath } from '../lib/invites'
+import { readAuthUrlError, authUrlErrorMessage, unusedSignInCodeMessage } from '../lib/authUrlError'
 import AboutKoshaLink from '../components/brand/AboutKoshaLink'
 import KoshaLogo from '../components/brand/KoshaLogo'
 import { C } from '../lib/colors'
@@ -23,25 +24,6 @@ function GoogleLogo() {
   )
 }
 
-// Supabase reports failed sign-ins and dead email links in the query string
-// or the hash (`error`, `error_code`, `error_description`).
-function readAuthUrlError(search, hash) {
-  const query = new URLSearchParams(search || '')
-  const fragment = new URLSearchParams(String(hash || '').replace(/^#/, ''))
-  const pick = (key) => query.get(key) || fragment.get(key) || ''
-  const code = pick('error_code') || pick('error')
-  if (!code) return null
-  return { code, description: pick('error_description').replace(/\+/g, ' ') }
-}
-
-function authUrlErrorMessage({ code, description }, isRecoveryFlow) {
-  if (code === 'otp_expired' || (isRecoveryFlow && /expired|invalid/i.test(description))) {
-    return 'This link has expired or was already used. Request a new reset link below.'
-  }
-  if (code === 'access_denied') return 'Sign-in was cancelled. Try again when you’re ready.'
-  return description ? `Sign-in failed: ${description}` : 'Sign-in failed. Try again.'
-}
-
 export default function Login() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -49,6 +31,7 @@ export default function Login() {
 
   const {
     user,
+    loading: authLoading,
     signInWithGoogle,
     signInWithEmail,
     signUpWithEmail,
@@ -83,6 +66,14 @@ export default function Login() {
     window.addEventListener('pageshow', onPageShow)
     return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
+
+  const [hadSignInCode] = useState(() => new URLSearchParams(location.search).has('code'))
+  useEffect(() => {
+    if (!hadSignInCode || authLoading || user) return
+    if (!new URLSearchParams(window.location.search).has('code')) return
+    setError(unusedSignInCodeMessage(isRecoveryFlow))
+    if (isRecoveryFlow) setMode('forgot')
+  }, [hadSignInCode, authLoading, user, isRecoveryFlow])
 
   const from = location.state?.from || '/'
 

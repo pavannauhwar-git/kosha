@@ -7,11 +7,17 @@ const API = 'https://abc.supabase.co'
 describe('sanitizeRoute', () => {
   it('redacts invite tokens in the path', () => {
     expect(sanitizeRoute('/join/abc123')).toBe('/join/<redacted>')
-    expect(sanitizeRoute('/splitwise/join/xyz?x=1')).toBe('/splitwise/join/<redacted>?x=1')
+    expect(sanitizeRoute('/splitwise/join/xyz?tab=1')).toBe('/splitwise/join/<redacted>?tab=1')
   })
 
   it('redacts sensitive query params and drops the hash', () => {
     expect(sanitizeRoute('/auth?code=secret&next=%2F#access_token=t')).toBe('/auth?code=%3Credacted%3E&next=%2F')
+  })
+
+  it('redacts search text and any value it does not know', () => {
+    expect(sanitizeRoute('/transactions?q=rent+25000&type=expense')).toBe('/transactions?q=%3Credacted%3E&type=expense')
+    expect(sanitizeRoute('/loans?repaymentCounterparty=Ravi&repaymentAmount=5000'))
+      .toBe('/loans?repaymentCounterparty=%3Credacted%3E&repaymentAmount=%3Credacted%3E')
   })
 
   it('leaves ordinary routes alone', () => {

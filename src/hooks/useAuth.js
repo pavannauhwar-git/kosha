@@ -8,6 +8,7 @@ import { initActiveWallet } from '../lib/walletStore.js'
 import { fetchLinkedUserIds, fetchLinkedProfiles } from '../lib/walletSync.js'
 import { purgeUserScopedKeys, purgeServiceWorkerCaches } from '../lib/safeStorage.js'
 import { clearAllPendingInvites } from '../lib/invites.js'
+import { readStoredSessionUser, getCacheOwner, setCacheOwner } from '../lib/storedSession.js'
 import { _resetRecurringSyncState } from './useTransactions.js'
 
 const USER_PROFILE_QUERY_KEY = ['user-profile']
@@ -175,9 +176,16 @@ export function useAuthState() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        const u = session?.user ?? null
+        let u = session?.user ?? null
 
         if (event === 'INITIAL_SESSION') {
+          // Offline after the access token expired, the refresh fails but the
+          // stored session stays, so keep the user signed in and show the
+          // cached data. supabase-js refreshes once the network is back, or
+          // fires SIGNED_OUT if the session turns out to be dead.
+          if (!u) u = readStoredSessionUser()
+          if (u && getCacheOwner() !== u.id) await purgeAllUserScopedState()
+          if (u) setCacheOwner(u.id)
           setAuthUser(u)
           if (u) {
             setErrorReportingUser({ id: u.id })
@@ -210,9 +218,10 @@ export function useAuthState() {
           return
         }
 
-        if (event === 'SIGNED_IN') {
-          // SIGNED_IN fires in three different situations and each needs a
-          // different cache discipline:
+        if (event === 'SIGNED_IN' || event === 'PASSWORD_RECOVERY') {
+          // SIGNED_IN (and PASSWORD_RECOVERY, for a reset link) fires in
+          // three different situations and each needs a different cache
+          // discipline:
           //
           //   (a) Same user as before (silent token-refresh path):
           //       Do NOT clear anything — clearing here would drop the
@@ -224,22 +233,19 @@ export function useAuthState() {
           //       Full purge. The SIGNED_OUT branch usually purged already,
           //       but doing it again is cheap and defensive.
           //
-          //   (c) Fresh page load with no prior `lastSeenUserId` (e.g. the
-          //       previous user closed the tab without signing out — their
-          //       Supabase JWT may have already expired so no session is
-          //       restored — and a different person opens the browser and
-          //       signs in):
-          //       We MUST purge the SW `supabase-data` cache here. The
-          //       previous user's responses to RLS-filtered URLs like
-          //       `GET /rest/v1/split_groups?...` are still present in
-          //       Workbox storage and would be served to the new user via
-          //       StaleWhileRevalidate. React Query's `clear()` alone does
-          //       not help because that's a separate cache layer.
+          //   (c) Fresh page load with no prior `lastSeenUserId`. On a cold
+          //       start supabase-js can report SIGNED_IN before
+          //       INITIAL_SESSION, so only purge when the persisted cache
+          //       belongs to someone else (the previous user closed the tab
+          //       without signing out and a different person signed in);
+          //       otherwise the offline cache would be wiped on every launch.
           const userChanged = !!u && lastSeenUserId && lastSeenUserId !== u.id
           const isFirstSignIn = !!u && !lastSeenUserId
-          if (userChanged || isFirstSignIn) {
+          if (userChanged || (u && getCacheOwner() !== u.id)) {
             await purgeAllUserScopedState()
+            clearErrorReportingUser()
           }
+          if (u) setCacheOwner(u.id)
           if (u && !userChanged && !isFirstSignIn) {
             setAuthUser(u)
             setUser(u)
@@ -272,6 +278,7 @@ export function useAuthState() {
           // explicitly; both call sites must wipe state or the next user to
           // sign in on the same device sees the previous user's data.
           await purgeAllUserScopedState()
+          setCacheOwner(null)
           clearAllPendingInvites()
           clearAuthUser()
           clearErrorReportingUser()
@@ -298,9 +305,19 @@ export function useAuthState() {
     const safetyTimer = setTimeout(() => {
       if (!initialised) {
         console.warn('[Kosha] Auth INITIAL_SESSION did not fire within 3s. Releasing loading state.')
+        const stored = readStoredSessionUser()
+        initialised = true
+        if (stored && getCacheOwner() === stored.id) {
+          setAuthUser(stored)
+          initActiveWallet(stored.id)
+          lastSeenUserId = stored.id
+          setUser(stored)
+          setLoading(false)
+          loadProfileRef.current(stored.id)
+          return
+        }
         setLoading(false)
         setProfileLoading(false)
-        initialised = true
       }
     }, 3000)
 
@@ -381,6 +398,7 @@ export function useAuthState() {
       forceReload = true
     } finally {
       await purgeAllUserScopedState()
+      setCacheOwner(null)
       clearAllPendingInvites()
       clearAuthUser()
       clearErrorReportingUser()
