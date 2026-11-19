@@ -241,6 +241,17 @@ export function optimisticallyInsertSplitSettlement(groupId, settlement) {
 export function useSplitwise({ groupId, enabled = true } = {}) {
   const userId = useActiveWallet()
 
+  let authUserId = null
+  try {
+    authUserId = getAuthUserId()
+  } catch {
+    authUserId = null
+  }
+  // Split groups belong to the signed-in user (RLS checks auth.uid()), not to
+  // the wallet being viewed, so a partner's wallet has none to show.
+  const ownWallet = !!userId && userId === authUserId
+  const groupEnabled = enabled && ownWallet && !!groupId
+
   // No previous-data placeholders: every key is per wallet or per trip, so a
   // placeholder would show another wallet's or trip's balances under this one.
   const [groupsQuery, accessQuery, groupAccessQuery, membersQuery, expensesQuery, settlementsQuery] = useQueries({
@@ -248,55 +259,48 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
       {
         queryKey: splitGroupsKey(userId),
         queryFn: fetchGroups,
-        enabled: enabled && !!userId,
+        enabled: enabled && ownWallet,
         refetchOnMount: true,
       },
       {
         queryKey: splitGroupAccessKey(userId),
         queryFn: fetchGroupAccess,
-        enabled: enabled && !!userId,
+        enabled: enabled && ownWallet,
         refetchOnMount: true,
       },
       {
         queryKey: splitGroupMembersAccessKey(groupId),
         queryFn: () => fetchGroupMemberAccess(groupId),
-        enabled: enabled && !!groupId,
+        enabled: groupEnabled,
         refetchOnMount: true,
       },
       {
         queryKey: splitMembersKey(groupId),
         queryFn: () => fetchMembers(groupId),
-        enabled: enabled && !!groupId,
+        enabled: groupEnabled,
         refetchOnMount: true,
       },
       {
         queryKey: splitExpensesKey(groupId),
         queryFn: () => fetchExpenses(groupId),
-        enabled: enabled && !!groupId,
+        enabled: groupEnabled,
         refetchOnMount: true,
       },
       {
         queryKey: splitSettlementsKey(groupId),
         queryFn: () => fetchSettlements(groupId),
-        enabled: enabled && !!groupId,
+        enabled: groupEnabled,
         refetchOnMount: true,
       },
     ],
   })
 
-  const rawGroups = groupsQuery.data ?? EMPTY_ROWS
-  const accessRows = accessQuery.data ?? EMPTY_ROWS
+  const rawGroups = ownWallet ? (groupsQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const accessRows = ownWallet ? (accessQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
   const accessByGroupId = useMemo(
     () => new Map((accessRows || []).map((row) => [row.group_id, row.role])),
     [accessRows]
   )
-
-  let authUserId = null
-  try {
-    authUserId = getAuthUserId()
-  } catch {
-    authUserId = null
-  }
 
   const groups = useMemo(
     () => (rawGroups || []).map((group) => {
@@ -309,10 +313,10 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
     [rawGroups, accessByGroupId, authUserId]
   )
 
-  const members = membersQuery.data ?? EMPTY_ROWS
-  const groupAccessRows = groupAccessQuery.data ?? EMPTY_ROWS
-  const expenses = expensesQuery.data ?? EMPTY_ROWS
-  const settlements = settlementsQuery.data ?? EMPTY_ROWS
+  const members = ownWallet ? (membersQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const groupAccessRows = ownWallet ? (groupAccessQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const expenses = ownWallet ? (expensesQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
+  const settlements = ownWallet ? (settlementsQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
 
   const balances = useMemo(() => {
     const memberMap = new Map((members || []).map((member) => [member.id, member]))

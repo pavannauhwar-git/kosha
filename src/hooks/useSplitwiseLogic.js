@@ -361,7 +361,7 @@ export function useSplitwiseLogic() {
       ])
     })
     const safeName = String(activeGroup?.name || 'ledger').replace(/[^a-z0-9-_]+/gi, '_').slice(0, 60)
-    downloadCsv(`kosha-trip-${safeName}.csv`, toCsv(headers, rows))
+    void downloadCsv(`kosha-trip-${safeName}.csv`, toCsv(headers, rows))
   }
 
   const memberById = useMemo(() => {
@@ -998,13 +998,6 @@ export function useSplitwiseLogic() {
       return
     }
 
-    const expenseCurrencies = new Set(expenses.map(e => String(e.currency_code || 'INR').toUpperCase()))
-    const settlementCurrency = String(settlementForm.currency_code || 'INR').toUpperCase()
-    if (expenseCurrencies.size > 0 && !expenseCurrencies.has(settlementCurrency) && !expenseCurrencies.has('INR')) {
-      pushToast(`Cross-currency settle-up not supported. Expenses are in ${[...expenseCurrencies].join(', ')}`)
-      return
-    }
-
     if (actionGuard.current) return
     actionGuard.current = true
 
@@ -1162,6 +1155,7 @@ export function useSplitwiseLogic() {
 
 
   function applySuggestedTransfer(transfer) {
+    if (!canManageGroup) return
     if (!transfer?.from?.id || !transfer?.to?.id || !transfer?.amount) return
     setSettlementForm((prev) => ({
       ...prev,

@@ -307,6 +307,16 @@ function restoreLoanSnapshot(snapshot) {
 
 export function optimisticallyInsertLoan(loan, targetUserId) {
   if (!loan?.id || !targetUserId) return
+  if (loan.settled) {
+    // Undoing the delete of a settled loan puts it back in the settled list,
+    // if that list is loaded; otherwise the next fetch brings it back.
+    const settledKey = LOAN_SETTLED_KEY(targetUserId)
+    const settledPrev = queryClient.getQueryData(settledKey)
+    if (Array.isArray(settledPrev)) {
+      queryClient.setQueryData(settledKey, [loan, ...settledPrev.filter((row) => row?.id !== loan.id)])
+    }
+    return
+  }
   const key = loan.direction === 'given' ? LOAN_ACTIVE_GIVEN_KEY(targetUserId) : LOAN_ACTIVE_TAKEN_KEY(targetUserId)
   const prev = queryClient.getQueryData(key)
   const base = Array.isArray(prev) ? prev : []

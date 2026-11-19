@@ -117,6 +117,22 @@ export function getCategoriesForType(type) {
   return [...CATEGORIES, ...customs]
 }
 
+// Investments are told apart by investment_vehicle (a label), not category,
+// so their filter offers vehicles: the built-in ones plus custom ones.
+export function getTransactionFilterOptions(type) {
+  if (type !== 'investment') return getCategoriesForType(type)
+  const seen = new Set()
+  const options = []
+  const builtIns = INVESTMENT_VEHICLES.filter(v => v.id !== 'other')
+  const customs = _customCategories.filter(c => c.type === 'investment')
+  for (const { label } of [...builtIns, ...customs, OTHER_CATEGORY]) {
+    if (!label || seen.has(label)) continue
+    seen.add(label)
+    options.push({ id: label, label })
+  }
+  return options
+}
+
 function isCategoryAllowedForType(type, categoryId) {
   if (!categoryId) return false
   if (type === 'income') return INCOME_CATEGORY_IDS.has(categoryId) || _customCategories.some(c => c.id === categoryId && c.type === 'income')
