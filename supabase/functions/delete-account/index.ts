@@ -7,6 +7,24 @@ declare const Deno: any;
 const MAX_BODY_BYTES = 1024
 const LIST_PAGE = 100
 const MAX_PAGES = 50
+// A stolen access token stays valid for up to an hour, so deletion also needs
+// a sign-in from the last few minutes. The JWT's `amr` claim keeps the time of
+// each sign-in method, and token refreshes don't change it.
+const MAX_SIGN_IN_AGE_SECONDS = 10 * 60
+
+function lastSignInSeconds(authHeader: string): number | null {
+  try {
+    const payload = authHeader.replace(/^Bearer\s+/i, '').split('.')[1] || ''
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const claims = JSON.parse(atob(base64.padEnd(Math.ceil(base64.length / 4) * 4, '=')))
+    const times = (Array.isArray(claims?.amr) ? claims.amr : [])
+      .map((entry: any) => Number(entry?.timestamp))
+      .filter((value: number) => Number.isFinite(value) && value > 0)
+    return times.length ? Math.max(...times) : null
+  } catch {
+    return null
+  }
+}
 
 // CORS — same `ALLOWED_ORIGINS` secret as bug-report-notify
 // (comma-separated list of app origins).
@@ -109,6 +127,11 @@ Deno.serve(async (req: Request) => {
 
     const { data: { user }, error: userError } = await userClient.auth.getUser()
     if (userError || !user) return json(req, { ok: false, error: 'unauthorized' }, 401)
+
+    const signedInAt = lastSignInSeconds(authHeader)
+    if (signedInAt === null || Date.now() / 1000 - signedInAt > MAX_SIGN_IN_AGE_SECONDS) {
+      return json(req, { ok: false, error: 'reauth_required' }, 403)
+    }
 
     const admin = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false },

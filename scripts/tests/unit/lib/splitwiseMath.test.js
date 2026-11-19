@@ -3,7 +3,8 @@ import {
   buildEqualSplits,
   buildExactSplits,
   buildPercentSplits,
-  buildShareSplits
+  buildShareSplits,
+  buildSplitsFromInputs
 } from '../../../../src/lib/splitwiseMath'
 
 describe('splitwiseMath', () => {
@@ -130,6 +131,57 @@ describe('splitwiseMath', () => {
         { member_id: 'id2', percent: 0.5 }
       ], 0.01)
       expect(splits).toEqual([{ member_id: 'id1', percent: 99.5, share: 0.01 }])
+    })
+  })
+
+  describe('buildSplitsFromInputs', () => {
+    const ids = ['a', 'b', 'c']
+
+    it('uses only enabled members', () => {
+      const inputs = { a: { enabled: true }, b: { enabled: false }, c: { enabled: true } }
+      expect(buildSplitsFromInputs('equal', 100, ids, inputs)).toEqual([
+        { member_id: 'a', share: 50 },
+        { member_id: 'c', share: 50 },
+      ])
+    })
+
+    it('ignores enabled inputs for members not in the list', () => {
+      const inputs = { a: { enabled: true }, z: { enabled: true } }
+      expect(buildSplitsFromInputs('equal', 90, ids, inputs)).toEqual([{ member_id: 'a', share: 90 }])
+    })
+
+    it('needs at least one participant', () => {
+      expect(() => buildSplitsFromInputs('equal', 100, ids, {})).toThrow('Select at least one participant')
+    })
+
+    it('needs exact amounts to add up to the paisa', () => {
+      const inputs = { a: { enabled: true, exact: '33.33' }, b: { enabled: true, exact: '66.66' } }
+      expect(() => buildSplitsFromInputs('exact', 100, ids, inputs)).toThrow('Sum: 99.99, Total: 100')
+      inputs.b.exact = '66.67'
+      expect(buildSplitsFromInputs('exact', 100, ids, inputs)).toEqual([
+        { member_id: 'a', share: 33.33 },
+        { member_id: 'b', share: 66.67 },
+      ])
+    })
+
+    it('needs percentages to total 100', () => {
+      const inputs = { a: { enabled: true, percent: '60' }, b: { enabled: true, percent: '30' } }
+      expect(() => buildSplitsFromInputs('percent', 100, ids, inputs)).toThrow('Current: 90%')
+      inputs.b.percent = '40'
+      expect(buildSplitsFromInputs('percent', 100, ids, inputs)).toEqual([
+        { member_id: 'a', percent: 60, share: 60 },
+        { member_id: 'b', percent: 40, share: 40 },
+      ])
+    })
+
+    it('splits by shares and needs at least one share', () => {
+      const inputs = { a: { enabled: true, shares: '2' }, b: { enabled: true, shares: '1' } }
+      expect(buildSplitsFromInputs('shares', 90, ids, inputs)).toEqual([
+        { member_id: 'a', shares: 2, share: 60 },
+        { member_id: 'b', shares: 1, share: 30 },
+      ])
+      expect(() => buildSplitsFromInputs('shares', 90, ids, { a: { enabled: true, shares: '0' } }))
+        .toThrow('At least one share entry is required.')
     })
   })
 })

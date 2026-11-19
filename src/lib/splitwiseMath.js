@@ -113,6 +113,60 @@ export function buildShareSplits(entries, amount) {
   }))
 }
 
+// Turns the expense form's per-member inputs into split rows. Only members in
+// `memberIds` whose input is enabled take part, in `memberIds` order.
+export function buildSplitsFromInputs(method, amount, memberIds, splitInputs) {
+  const inputs = splitInputs || {}
+  const selectedMemberIds = (memberIds || []).filter((memberId) => inputs[memberId]?.enabled)
+
+  if (!selectedMemberIds.length) {
+    throw new Error('Select at least one participant for this expense.')
+  }
+
+  if (method === 'equal') {
+    return buildEqualSplits(selectedMemberIds, amount)
+  }
+
+  if (method === 'exact') {
+    const sumPaise = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(inputs[memberId]?.exact || 0) * 100), 0)
+    const totalPaise = Math.round(amount * 100)
+    if (sumPaise !== totalPaise) {
+      throw new Error(`Exact splits must add up to the full amount. (Sum: ${sumPaise / 100}, Total: ${totalPaise / 100})`)
+    }
+
+    return buildExactSplits(
+      selectedMemberIds.map((memberId) => ({
+        member_id: memberId,
+        share: Number(inputs[memberId]?.exact || 0),
+      })),
+      amount
+    )
+  }
+
+  if (method === 'percent') {
+    const sumBasisPoints = selectedMemberIds.reduce((sum, memberId) => sum + Math.round(Number(inputs[memberId]?.percent || 0) * 100), 0)
+    if (sumBasisPoints !== 10000) {
+      throw new Error(`Percentage splits must total exactly 100%. (Current: ${sumBasisPoints / 100}%)`)
+    }
+
+    return buildPercentSplits(
+      selectedMemberIds.map((memberId) => ({
+        member_id: memberId,
+        percent: Number(inputs[memberId]?.percent || 0),
+      })),
+      amount
+    )
+  }
+
+  return buildShareSplits(
+    selectedMemberIds.map((memberId) => ({
+      member_id: memberId,
+      shares: Number(inputs[memberId]?.shares || 0),
+    })),
+    amount
+  )
+}
+
 export function computeMemberBalances(members, expenses, settlements) {
   const balanceByMember = new Map()
   const memberSet = new Set()

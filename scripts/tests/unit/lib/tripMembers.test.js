@@ -29,12 +29,17 @@ describe('tripMembers', () => {
   })
 
   it('keeps a guest active after the person who added them leaves', () => {
-    const roleByUserId = new Map([['u-dev', 'member']])
-    expect(memberRole({ ...gita, user_id: 'u-ben' }, { ownerUserId: OWNER, roleByUserId })).toBe('guest')
-    expect(memberRole(asha, { ownerUserId: OWNER, roleByUserId })).toBe('admin')
-    expect(memberRole(dev, { ownerUserId: OWNER, roleByUserId })).toBe('member')
-    expect(memberRole(ben, { ownerUserId: OWNER, roleByUserId })).toBe('left')
-    expect(memberRole(xan, { ownerUserId: OWNER, roleByUserId })).toBe('removed')
+    const roleByUserId = new Map([[OWNER, 'admin'], ['u-dev', 'member']])
+    expect(memberRole({ ...gita, user_id: 'u-ben' }, { roleByUserId })).toBe('guest')
+    expect(memberRole(asha, { roleByUserId })).toBe('admin')
+    expect(memberRole(dev, { roleByUserId })).toBe('member')
+    expect(memberRole(ben, { roleByUserId })).toBe('left')
+    expect(memberRole(xan, { roleByUserId })).toBe('removed')
+  })
+
+  it('gives the trip creator only the role in their access row', () => {
+    expect(memberRole(asha, { roleByUserId: new Map([[OWNER, 'viewer']]) })).toBe('viewer')
+    expect(memberRole(asha, { roleByUserId: new Map() })).toBe('left')
   })
 
   it('offers only current members for a new expense', () => {

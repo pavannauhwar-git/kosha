@@ -307,10 +307,12 @@ export function useSplitwise({ groupId, enabled = true } = {}) {
       const role = accessByGroupId.get(group.id)
       return {
         ...group,
-        my_role: role || (group.user_id === authUserId ? 'admin' : null),
+        // Only the access row counts: a creator can be demoted or removed.
+        // `group.my_role` is the optimistic value set right after creating.
+        my_role: role || group.my_role || null,
       }
     }),
-    [rawGroups, accessByGroupId, authUserId]
+    [rawGroups, accessByGroupId]
   )
 
   const members = ownWallet ? (membersQuery.data ?? EMPTY_ROWS) : EMPTY_ROWS
@@ -617,7 +619,7 @@ export async function consumeSplitGroupInviteMutation(inviteToken) {
       entityType: 'split_group_invite',
       entityId: rpcRow?.id || userId,
       metadata: {
-        token: token,
+        token_hint: token.slice(-4),
         group_id: rpcRow?.id || null,
       },
     }),
@@ -811,15 +813,20 @@ export async function deleteSplitExpenseMutation(expenseId) {
   // The RPC deletes the expense and the caller's own ledger entry in one
   // transaction. Other members keep theirs, unlinked, with a note.
   const queries = queryClient.getQueriesData({ queryKey: ['splitwise', 'expenses'] })
+  const snapshot = []
   for (const [key, expenses] of queries) {
     if (Array.isArray(expenses) && expenses.some(e => e.id === expenseId)) {
+      snapshot.push([key, expenses])
       const gid = key[2]
       optimisticallyDeleteSplitExpense(gid, expenseId)
     }
   }
 
   const { data, error } = await supabase.rpc('delete_split_expense_atomic', { p_id: expenseId })
-  if (error) throw error
+  if (error) {
+    for (const [key, expenses] of snapshot) queryClient.setQueryData(key, expenses)
+    throw error
+  }
 
   await invalidateSplitwiseCache()
   return data === true
