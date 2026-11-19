@@ -86,12 +86,11 @@ describe('Transactions Page', () => {
       measureElement: vi.fn()
     })
 
-    renderComponent()
-    
+    const { container } = renderComponent()
+
     expect(screen.getByText('Transactions')).toBeInTheDocument()
-    
-    // Check that we aren't showing the empty state
-    expect(screen.queryByText('No transactions found')).not.toBeInTheDocument()
+    expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
+    expect(screen.queryByText('No transactions yet')).not.toBeInTheDocument()
   })
 
   it('renders empty state when there are no transactions and not loading', () => {

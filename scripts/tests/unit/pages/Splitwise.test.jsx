@@ -72,10 +72,12 @@ describe('Splitwise Page', () => {
       groupsLoading: true,
       error: null,
     })
-    
-    renderComponent()
-    
+
+    const { container } = renderComponent()
+
     expect(screen.getByText('Splitwise')).toBeInTheDocument()
+    expect(container.querySelectorAll('.skeleton').length).toBeGreaterThan(0)
+    expect(screen.queryByText('No split group yet')).not.toBeInTheDocument()
   })
 
   it('renders empty state when there are no groups', () => {
