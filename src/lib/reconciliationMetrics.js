@@ -1,13 +1,13 @@
 /**
  * Reconciliation matching quality metrics & drift detection
  */
-import { parseStatementLines } from './statementMatching.js'
+import { parseStatementLines, statementMerchantKey } from './statementMatching.js'
 
 function merchantKeyFromStatementLine(line) {
   const raw = String(line || '')
   const parsed = parseStatementLines(raw)
   const description = parsed?.[0]?.description
-  return (description && description.trim()) || raw.trim()
+  return statementMerchantKey((description && description.trim()) || raw.trim())
 }
 
 export function calculateConfidenceMetrics(rows, timeWindowDays = 7) {
@@ -58,8 +58,21 @@ export function detectConfidenceDrift(rows) {
   return { drifting, recent, baseline, drift }
 }
 
-function isRejected(row) {
+export function isRejected(row) {
   return String(row?.statement_line || '').startsWith('REJECTED:')
+}
+
+// A rejected suggestion ("this match is wrong") says nothing about whether
+// the entry itself was checked, so it is not counted as reviewed.
+export function reviewIdSets(rows) {
+  const reviewed = new Set()
+  const linked = new Set()
+  for (const row of Array.isArray(rows) ? rows : []) {
+    if (!row?.transaction_id || isRejected(row)) continue
+    reviewed.add(row.transaction_id)
+    if (row.status === 'linked') linked.add(row.transaction_id)
+  }
+  return { reviewedIdSet: reviewed, linkedIdSet: linked }
 }
 
 export function getDriftMessage(drift) {

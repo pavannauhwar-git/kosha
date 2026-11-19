@@ -1,15 +1,38 @@
 import { fromRupees, toRupees, divEvenly } from './paise.js'
 
+// Splits `total` paise by integer weights. The denominator is the sum of the
+// same weights, so the leftover after flooring is always fewer paise than
+// there are rows and handing one paisa each to the first rows closes the gap.
+function distributeByWeights(total, weights) {
+  const weightSum = weights.reduce((acc, w) => acc + w, 0n)
+  if (weightSum <= 0n) return weights.map(() => 0n)
+  const shares = weights.map((w) => (total * w) / weightSum)
+  const delta = total - shares.reduce((acc, s) => acc + s, 0n)
+  const sign = delta < 0n ? -1n : 1n
+  const absDelta = delta < 0n ? -delta : delta
+  for (let i = 0; i < Number(absDelta) && i < shares.length; i++) {
+    shares[i] += sign
+  }
+  return shares
+}
+
+function assertSplitTotal(rows, total) {
+  const sum = rows.reduce((acc, row) => acc + row.sharePaise, 0n)
+  if (sum !== total) {
+    throw new Error('Split shares do not add up to the full amount.')
+  }
+}
+
 export function buildEqualSplits(memberIds, amount) {
   const validIds = (memberIds || []).filter(Boolean)
   const total = fromRupees(amount)
   if (!validIds.length || total === 0n) return []
 
   const shares = divEvenly(total, validIds.length)
-  return validIds.map((memberId, i) => ({
-    member_id: memberId,
-    share: toRupees(shares[i])
-  }))
+  return validIds
+    .map((memberId, i) => ({ member_id: memberId, sharePaise: shares[i] }))
+    .filter((row) => row.sharePaise !== 0n)
+    .map((row) => ({ member_id: row.member_id, share: toRupees(row.sharePaise) }))
 }
 
 export function buildExactSplits(entries, amount) {
@@ -46,25 +69,16 @@ export function buildPercentSplits(entries, amount) {
     throw new Error('Percentage splits must total exactly 100%.')
   }
 
-  const rawShares = mapped.map(entry => {
-    const bp = BigInt(Math.round(entry.percent * 100))
-    const exactShare = (total * bp) / 10000n
-    return { ...entry, exactShare, bp }
-  })
-  
-  const exactSum = rawShares.reduce((acc, e) => acc + e.exactShare, 0n)
-  const delta = total - exactSum
-  const sign = delta < 0n ? -1n : 1n;
-  const absDelta = delta < 0n ? -delta : delta;
-  
-  for (let i = 0; i < Number(absDelta) && i < rawShares.length; i++) {
-    rawShares[i].exactShare += sign;
-  }
-  
-  return rawShares.map(e => ({
-    member_id: e.member_id,
-    percent: e.percent,
-    share: toRupees(e.exactShare)
+  const shares = distributeByWeights(total, mapped.map((entry) => BigInt(Math.round(entry.percent * 100))))
+  const rows = mapped
+    .map((entry, i) => ({ ...entry, sharePaise: shares[i] }))
+    .filter((row) => row.sharePaise !== 0n)
+  assertSplitTotal(rows, total)
+
+  return rows.map((row) => ({
+    member_id: row.member_id,
+    percent: row.percent,
+    share: toRupees(row.sharePaise)
   }))
 }
 
@@ -82,27 +96,20 @@ export function buildShareSplits(entries, amount) {
     throw new Error('At least one share entry is required.')
   }
 
-  const totalSharesBig = BigInt(Math.round(totalShares * 10000))
-  
-  const rawShares = mapped.map(entry => {
-    const sBig = BigInt(Math.round(entry.shares * 10000))
-    const exactShare = (total * sBig) / totalSharesBig
-    return { ...entry, exactShare }
-  })
-  
-  const exactSum = rawShares.reduce((acc, e) => acc + e.exactShare, 0n)
-  const delta = total - exactSum
-  const sign = delta < 0n ? -1n : 1n;
-  const absDelta = delta < 0n ? -delta : delta;
-  
-  for (let i = 0; i < Number(absDelta) && i < rawShares.length; i++) {
-    rawShares[i].exactShare += sign;
+  const weights = mapped.map((entry) => BigInt(Math.round(entry.shares * 10000)))
+  if (weights.every((w) => w <= 0n)) {
+    throw new Error('At least one share entry is required.')
   }
-  
-  return rawShares.map(e => ({
-    member_id: e.member_id,
-    shares: e.shares,
-    share: toRupees(e.exactShare)
+  const shares = distributeByWeights(total, weights)
+  const rows = mapped
+    .map((entry, i) => ({ ...entry, sharePaise: shares[i] }))
+    .filter((row) => row.sharePaise !== 0n)
+  assertSplitTotal(rows, total)
+
+  return rows.map((row) => ({
+    member_id: row.member_id,
+    shares: row.shares,
+    share: toRupees(row.sharePaise)
   }))
 }
 

@@ -94,5 +94,42 @@ describe('splitwiseMath', () => {
       ]
       expect(() => buildShareSplits(entries, 100)).toThrow('At least one share entry is required.')
     })
+
+    it('adds up to the full amount with fractional shares on a large amount', () => {
+      const entries = [
+        { member_id: 'id1', shares: 0.33333 },
+        { member_id: 'id2', shares: 0.33333 },
+        { member_id: 'id3', shares: 0.33333 }
+      ]
+      const splits = buildShareSplits(entries, 1000000)
+      const totalPaise = splits.reduce((sum, row) => sum + Math.round(row.share * 100), 0)
+      expect(totalPaise).toBe(100000000)
+      expect(splits.map((row) => row.share)).toEqual([333333.34, 333333.33, 333333.33])
+    })
+
+    it('drops members whose share rounds to zero', () => {
+      const splits = buildShareSplits([
+        { member_id: 'id1', shares: 1000 },
+        { member_id: 'id2', shares: 1 }
+      ], 0.01)
+      expect(splits).toEqual([{ member_id: 'id1', shares: 1000, share: 0.01 }])
+    })
+  })
+
+  describe('zero shares', () => {
+    it('leaves out equal-split members who would owe nothing', () => {
+      expect(buildEqualSplits(['id1', 'id2', 'id3'], 0.02)).toEqual([
+        { member_id: 'id1', share: 0.01 },
+        { member_id: 'id2', share: 0.01 }
+      ])
+    })
+
+    it('leaves out percent-split members who would owe nothing', () => {
+      const splits = buildPercentSplits([
+        { member_id: 'id1', percent: 99.5 },
+        { member_id: 'id2', percent: 0.5 }
+      ], 0.01)
+      expect(splits).toEqual([{ member_id: 'id1', percent: 99.5, share: 0.01 }])
+    })
   })
 })

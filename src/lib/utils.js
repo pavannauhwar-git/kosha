@@ -17,17 +17,27 @@ const _dateLabelFmt = new Intl.DateTimeFormat(_locale, {
   weekday: 'short', day: 'numeric', month: 'short',
 })
 
+// Rounds to paise and turns -0 into 0, so a tiny negative left over from
+// float maths (-0.004) shows as ₹0.00 rather than −₹0.00.
+export function toDisplayAmount(n) {
+  const rounded = Math.round(n * 100) / 100
+  return rounded === 0 ? 0 : rounded
+}
+
 export function fmt(n, compact = false) {
   if (n === null || n === undefined || !Number.isFinite(n)) return '−'
-  const abs = Math.abs(n)
+  const value = toDisplayAmount(n)
+  const abs = Math.abs(value)
   if (compact) {
-    const sign = n < 0 ? '−' : ''
-    if (abs >= 1_00_00_000) return `${sign}₹\u202F${(abs / 1_00_00_000).toFixed(2)}Cr`
-    if (abs >= 1_00_000) return `${sign}₹\u202F${(abs / 1_00_000).toFixed(2)}L`
+    const sign = value < 0 ? '−' : ''
+    // Pick the unit from the rounded figure so 99.999L shows as 1.00Cr, not 100.00L.
+    const lakhs = Math.round((abs / 1_00_000) * 100) / 100
+    if (lakhs >= 100) return `${sign}₹\u202F${(Math.round((abs / 1_00_00_000) * 100) / 100).toFixed(2)}Cr`
+    if (lakhs >= 1) return `${sign}₹\u202F${lakhs.toFixed(2)}L`
     // Below 1 lakh: fall through to the standard grouped currency format rather
     // than the Western "K" suffix, keeping the Indian numbering convention.
   }
-  return _currencyFmt.format(n).replace('-', '−').replace('₹', '₹\u202F')
+  return _currencyFmt.format(value).replace('-', '−').replace('₹', '₹\u202F')
 }
 
 // Splits a currency amount into rupee and paise parts using Intl
@@ -38,7 +48,7 @@ export function splitFmtAmount(n) {
   if (n === null || n === undefined || !Number.isFinite(n)) {
     return { main: '—', decimal: '', totalLength: 1 }
   }
-  const parts = _currencyFmt.formatToParts(n)
+  const parts = _currencyFmt.formatToParts(toDisplayAmount(n))
   const before = []
   const after = []
   let crossed = false

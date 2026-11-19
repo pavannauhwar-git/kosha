@@ -5,6 +5,7 @@ import {
   identifyDemotedAliases,
   identifyMerchantsInCooldown,
   calculateConfidenceTrend,
+  reviewIdSets,
 } from '../../../../src/lib/reconciliationMetrics'
 
 function row({ status = 'linked', daysAgo = 1, statementLine = 'Merchant, 100' } = {}) {
@@ -80,5 +81,15 @@ describe('reconciliationMetrics', () => {
     expect(typeof latest.date).toBe('string')
     expect(latest.total).toBe(2)
     expect(latest.confidence).toBe(50)
+  })
+
+  it('does not count a rejected suggestion as reviewed', () => {
+    const { reviewedIdSet, linkedIdSet } = reviewIdSets([
+      { transaction_id: 't1', status: 'reviewed', statement_line: null },
+      { transaction_id: 't2', status: 'linked', statement_line: 'Swiggy, 100' },
+      { transaction_id: 't3', status: 'reviewed', statement_line: 'REJECTED:Uber, 250' },
+    ])
+    expect([...reviewedIdSet].sort()).toEqual(['t1', 't2'])
+    expect([...linkedIdSet]).toEqual(['t2'])
   })
 })
