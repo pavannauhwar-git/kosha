@@ -206,6 +206,7 @@ function splitFields(line) {
 
 const AMOUNT_FIELD = /^\(?\s*[-−+]?\s*(?:₹|rs\.?|inr)?\s*[-−]?\d[\d,]*(?:\.\d{1,2})?\s*\)?\s*(?:(?:dr|cr)\.?)?$/i
 const DRCR_FIELD = /^(?:dr|cr)\.?$/i
+const AMOUNT_WITH_PAISE = /\.\d{2}\s*\)?\s*(?:(?:dr|cr)\.?)?$/i
 const CURRENCY_FIELD = /^(?:₹|rs\.?|inr)$/i
 
 function parseStatementLine(line) {
@@ -248,8 +249,24 @@ function parseStatementLine(line) {
     seenOther = true
   }
 
+  // Most bank exports end with a running balance. When the two right-most
+  // amounts both carry paise, the last is the balance and the one before it
+  // is the transaction. Reference numbers have no paise, so they don't count.
+  const skipped = new Set()
+  if (amountIdx > 0 && AMOUNT_WITH_PAISE.test(fields[amountIdx])) {
+    let prev = amountIdx - 1
+    const prevDrcr = DRCR_FIELD.test(fields[prev]) ? prev : -1
+    if (prevDrcr >= 0) prev -= 1
+    if (prev >= 0 && AMOUNT_FIELD.test(fields[prev]) && AMOUNT_WITH_PAISE.test(fields[prev])) {
+      skipped.add(amountIdx)
+      if (drcrIdx >= 0) skipped.add(drcrIdx)
+      amountIdx = prev
+      drcrIdx = prevDrcr
+    }
+  }
+
   const parsedAmount = amountIdx >= 0 ? parseAmount(fields[amountIdx]) : null
-  const description = fields.filter((_, i) => i !== amountIdx && i !== drcrIdx).join(' ')
+  const description = fields.filter((_, i) => i !== amountIdx && i !== drcrIdx && !skipped.has(i)).join(' ')
 
   let signedHint = parsedAmount?.signedHint || 'unknown'
   if (signedHint === 'unknown' && drcrIdx >= 0) {
