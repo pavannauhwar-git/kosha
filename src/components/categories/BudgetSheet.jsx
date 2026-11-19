@@ -6,6 +6,7 @@ import { upsertBudget as upsertBudgetApi, deleteBudget as deleteBudgetApi } from
 import { useAppMutation } from '../../hooks/useAppMutation'
 import CategoryIcon from './CategoryIcon'
 import { fmt } from '../../lib/utils'
+import { C } from '../../lib/colors'
 import { sanitizeAmountInput, validateAmount } from '../../lib/validateAmount.js'
 import FormField from '../ui/FormField'
 import Sheet from '../ui/Sheet'
@@ -175,13 +176,13 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
                       <circle
                         cx="18" cy="18" r="15"
                         fill="none"
-                        stroke="rgba(17,19,24,0.05)"
+                        stroke={C.chartGrid}
                         strokeWidth="3"
                       />
                       <circle
                         cx="18" cy="18" r="15"
                         fill="none"
-                        stroke={pct >= 100 ? '#E8453C' : pct >= 80 ? '#F9A825' : '#007FFF'}
+                        stroke={pct >= 100 ? C.expense : pct >= 80 ? C.bills : C.brand}
                         strokeWidth="3"
                         strokeLinecap="round"
                         strokeDasharray={`${Math.min(100, pct) * 0.9425} 94.25`}

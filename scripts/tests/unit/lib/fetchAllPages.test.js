@@ -27,6 +27,24 @@ describe('fetchAllPages', () => {
     expect(calls).toHaveLength(3)
   })
 
+  it('stops at maxRows, asking only for the rows it needs', async () => {
+    const { build, calls } = fakeQuery(5000)
+    expect(await fetchAllPages(build, { maxRows: 1500 })).toHaveLength(1500)
+    expect(calls).toEqual([[0, 999], [1000, 1499]])
+  })
+
+  it('makes one request when maxRows fits in a page', async () => {
+    const { build, calls } = fakeQuery(5000)
+    expect(await fetchAllPages(build, { maxRows: 250 })).toHaveLength(250)
+    expect(calls).toEqual([[0, 249]])
+  })
+
+  it('returns fewer rows than maxRows when that is all there is', async () => {
+    const { build, calls } = fakeQuery(1200)
+    expect(await fetchAllPages(build, { maxRows: 1500 })).toHaveLength(1200)
+    expect(calls).toEqual([[0, 999], [1000, 1499]])
+  })
+
   it('throws the query error', async () => {
     const build = () => ({ range: async () => ({ data: null, error: new Error('nope') }) })
     await expect(fetchAllPages(build)).rejects.toThrow('nope')

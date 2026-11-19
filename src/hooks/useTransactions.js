@@ -9,6 +9,7 @@ import { traceQuery } from '../lib/queryTrace'
 import { todayStr } from '../lib/utils'
 import { averageSavingsRate } from '../lib/cashflow'
 import { createDebouncedTask } from '../lib/debouncedTask'
+import { fetchAllPages } from '../lib/fetchAllPages'
 import { FIXED_SPEND_CATEGORIES } from '../lib/weeklyDrift'
 
 export const inFlightDeletedTxnIds = new Set()
@@ -341,30 +342,32 @@ export function useTransactions({ type, category, vehicle, paymentMode, search, 
           await ensureRecurringTransactionsReady(authUserId)
         }
 
-        let q = supabase
-          .from('transactions')
-          .select(selectedColumns)
-          .in('user_id', allUserIds)
-          .order('date',       { ascending: false })
-          .order('created_at', { ascending: false })
-          .order('id',         { ascending: false })
+        const buildQuery = () => {
+          let q = supabase
+            .from('transactions')
+            .select(selectedColumns)
+            .in('user_id', allUserIds)
+            .order('date',       { ascending: false })
+            .order('created_at', { ascending: false })
+            .order('id',         { ascending: false })
 
-        if (type)     q = q.eq('type', type)
-        if (category) q = q.eq('category', category)
-        if (vehicle)  q = q.eq('investment_vehicle', vehicle)
-        if (paymentMode) q = q.eq('payment_mode', paymentMode)
-        if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
-        if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
-        if (linkedSplitExpenseId) q = q.eq('linked_split_expense_id', linkedSplitExpenseId)
-        if (linkedSplitSettlementId) q = q.eq('linked_split_settlement_id', linkedSplitSettlementId)
-        if (startDate) q = q.gte('date', startDate)
-        if (endDate)   q = q.lte('date', endDate)
-        if (search)   q = applyTransactionSearchFilter(q, search)
-        if (limit)    q = q.limit(limit)
+          if (type)     q = q.eq('type', type)
+          if (category) q = q.eq('category', category)
+          if (vehicle)  q = q.eq('investment_vehicle', vehicle)
+          if (paymentMode) q = q.eq('payment_mode', paymentMode)
+          if (linkedLoanId) q = q.eq('linked_loan_id', linkedLoanId)
+          if (linkedBillId) q = q.eq('linked_bill_id', linkedBillId)
+          if (linkedSplitExpenseId) q = q.eq('linked_split_expense_id', linkedSplitExpenseId)
+          if (linkedSplitSettlementId) q = q.eq('linked_split_settlement_id', linkedSplitSettlementId)
+          if (startDate) q = q.gte('date', startDate)
+          if (endDate)   q = q.lte('date', endDate)
+          if (search)   q = applyTransactionSearchFilter(q, search)
+          return q.abortSignal(signal)
+        }
 
-        const { data, error: err } = await q.abortSignal(signal)
-        if (err) throw err
-        return (data || []).filter(r => !inFlightDeletedTxnIds.has(r.id))
+        const maxRows = Number(limit) > 0 ? Number(limit) : Infinity
+        const data = await fetchAllPages(buildQuery, { maxRows })
+        return data.filter(r => !inFlightDeletedTxnIds.has(r.id))
       } catch (err) {
         logQueryError('transactions list', err)
         throw err
@@ -1158,8 +1161,16 @@ export function optimisticallyDeleteTransactionsByLoanId(loanId, targetUserId) {
   return deletedTxnIds
 }
 
-export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
+// Deleting a bill removes only the payment entry the bill created; any other
+// entry linked to it stays, unlinked (same rule as delete_liability_with_txns).
+export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId, paymentTxnId = null) {
   if (!billId || !targetUserId) return
+
+  const isBillPayment = (row) => !!paymentTxnId
+    && row?.id === paymentTxnId
+    && row?.linked_bill_id === billId
+    && !row?.linked_split_expense_id
+    && !row?.linked_split_settlement_id
 
   const deletedTxnIds = new Set()
   for (const family of [['transactions'], ['transactionsRecent']]) {
@@ -1167,7 +1178,7 @@ export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
     for (const [key, rows] of entries) {
       if (key?.[2] && key[2] !== targetUserId) continue
       if (Array.isArray(rows)) {
-        const toDelete = rows.filter((row) => row?.linked_bill_id === billId)
+        const toDelete = rows.filter(isBillPayment)
         for (const txn of toDelete) {
           if (!deletedTxnIds.has(txn.id)) {
             deletedTxnIds.add(txn.id)
@@ -1184,7 +1195,9 @@ export function optimisticallyDeleteTransactionsByBillId(billId, targetUserId) {
     for (const [key, rows] of entries) {
       if (key?.[2] && key[2] !== targetUserId) continue
       const baseRows = Array.isArray(rows) ? rows : []
-      queryClient.setQueryData(key, baseRows.filter((row) => row?.linked_bill_id !== billId))
+      queryClient.setQueryData(key, baseRows
+        .filter((row) => !deletedTxnIds.has(row?.id))
+        .map((row) => (row?.linked_bill_id === billId ? { ...row, linked_bill_id: null } : row)))
     }
   }
   return deletedTxnIds

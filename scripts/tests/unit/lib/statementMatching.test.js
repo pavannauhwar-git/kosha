@@ -145,6 +145,26 @@ describe('statementMatching', () => {
       expect(entry.direction).toBe('debit')
     })
 
+    it('skips a closing-balance column after the amount', () => {
+      const csv = parseOne('05/11/2026, UPI/SWIGGY, 450.00, , 12,345.67')
+      expect(csv.amount).toBe(450)
+      expect(csv.description).toBe('UPI/SWIGGY')
+
+      const deposit = parseOne('05/11/2026\tNEFT-ACME-SALARY\t\t75,000.00\t87,345.67')
+      expect(deposit.amount).toBe(75000)
+      expect(deposit.description).toBe('NEFT-ACME-SALARY')
+
+      const spaced = parseOne('05-Nov-2026 SWIGGY 450.00 Dr 12,345.67 Cr')
+      expect(spaced.amount).toBe(450)
+      expect(spaced.direction).toBe('debit')
+      expect(spaced.description).toBe('SWIGGY')
+    })
+
+    it('does not mistake a reference number for the amount', () => {
+      const entry = parseOne('24/03/2026 IMPS 412345 318.50')
+      expect(entry.amount).toBe(318.5)
+    })
+
     it('finds the amount when it is not the last field', () => {
       const entry = parseOne('24/03/2026,450.00,Swiggy')
       expect(entry.amount).toBe(450)

@@ -182,10 +182,13 @@ CREATE TABLE IF NOT EXISTS public.loans (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid,
     CONSTRAINT loans_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT loans_amount_not_nan CHECK ((amount <> 'NaN'::numeric)),
     CONSTRAINT loans_amount_settled_check CHECK ((amount_settled >= (0)::numeric)),
+    CONSTRAINT loans_amount_settled_not_nan CHECK ((amount_settled <> 'NaN'::numeric)),
     CONSTRAINT loans_amount_settled_le_amount CHECK ((amount_settled <= amount)),
     CONSTRAINT loans_direction_check CHECK ((direction = ANY (ARRAY['given'::text, 'taken'::text]))),
-    CONSTRAINT loans_interest_rate_check CHECK ((interest_rate >= (0)::numeric))
+    CONSTRAINT loans_interest_rate_check CHECK ((interest_rate >= (0)::numeric)),
+    CONSTRAINT loans_interest_rate_not_nan CHECK ((interest_rate <> 'NaN'::numeric))
 );
 
 ALTER TABLE public.loans
@@ -216,12 +219,36 @@ $do$;
 
 DO $do$
 BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.loans DROP CONSTRAINT loans_amount_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_not_nan') THEN
+    ALTER TABLE ONLY public.loans ADD CONSTRAINT loans_amount_not_nan CHECK ((amount <> 'NaN'::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_settled_check'
              AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount_settled >= (0)::numeric))$c$) THEN
     ALTER TABLE public.loans DROP CONSTRAINT loans_amount_settled_check;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_settled_check') THEN
     ALTER TABLE ONLY public.loans ADD CONSTRAINT loans_amount_settled_check CHECK ((amount_settled >= (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_settled_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount_settled <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.loans DROP CONSTRAINT loans_amount_settled_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_amount_settled_not_nan') THEN
+    ALTER TABLE ONLY public.loans ADD CONSTRAINT loans_amount_settled_not_nan CHECK ((amount_settled <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -258,6 +285,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_interest_rate_check') THEN
     ALTER TABLE ONLY public.loans ADD CONSTRAINT loans_interest_rate_check CHECK ((interest_rate >= (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_interest_rate_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((interest_rate <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.loans DROP CONSTRAINT loans_interest_rate_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.loans'::regclass AND conname = 'loans_interest_rate_not_nan') THEN
+    ALTER TABLE ONLY public.loans ADD CONSTRAINT loans_interest_rate_not_nan CHECK ((interest_rate <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -453,8 +492,10 @@ begin
     and not exists (select 1 from public.split_group_access a where a.group_id = g.id and a.user_id <> p_user_id);
 
   update public.split_group_members
-  set display_name = 'Former member'
-  where linked_user_id = p_user_id;
+  set display_name = 'Former member',
+      left_at = coalesce(left_at, now())
+  where linked_user_id = p_user_id
+     or (linked_user_id is null and left_at is not null and user_id = p_user_id);
 
   delete from public.bug_reports where user_id = p_user_id;
 end;
@@ -467,7 +508,7 @@ CREATE OR REPLACE FUNCTION public.delete_liability_with_txns(p_id uuid) RETURNS 
     AS $$
 declare
   v_uid uuid := auth.uid();
-  v_owner uuid;
+  v_bill public.liabilities%rowtype;
   v_rows integer;
 begin
   if v_uid is null then
@@ -477,14 +518,26 @@ begin
     raise exception using errcode = '22023', message = 'p_id is required';
   end if;
 
-  select user_id into v_owner from public.liabilities where id = p_id;
-  if v_owner is null then
+  select * into v_bill from public.liabilities where id = p_id for update;
+  if not found then
     return false;
   end if;
 
-  if v_owner <> v_uid then
+  if v_bill.user_id <> v_uid then
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
+
+  delete from public.transactions t
+  where t.id = v_bill.linked_transaction_id
+    and t.user_id = v_uid
+    and t.linked_bill_id = p_id
+    and v_bill.payment_txn_created is distinct from false
+    and t.linked_split_expense_id is null
+    and t.linked_split_settlement_id is null;
+
+  update public.transactions
+  set linked_bill_id = null
+  where linked_bill_id = p_id;
 
   delete from public.liabilities where id = p_id and user_id = v_uid;
   get diagnostics v_rows = row_count;
@@ -531,6 +584,7 @@ declare
   v_uid uuid := auth.uid();
   v_group_id uuid;
   v_group_name text;
+  v_archived boolean;
   v_note text;
   v_rows integer;
 begin
@@ -541,8 +595,8 @@ begin
     raise exception using errcode = '22023', message = 'p_id is required';
   end if;
 
-  select e.group_id, g.name
-    into v_group_id, v_group_name
+  select e.group_id, g.name, g.is_archived
+    into v_group_id, v_group_name, v_archived
   from public.split_expenses e
   join public.split_groups g on g.id = e.group_id
   where e.id = p_id
@@ -552,6 +606,16 @@ begin
 
   if not public.is_split_group_member_or_above(v_group_id, v_uid) then
     raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+  if v_archived then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
+  if exists (
+    select 1 from public.transactions
+    where linked_split_expense_id = p_id and user_id = v_uid and linked_bill_id is not null
+  ) then
+    raise exception 'This expense paid one of your bills. Undo the payment in Bills first.';
   end if;
 
   delete from public.transactions
@@ -580,6 +644,7 @@ declare
   v_uid uuid := auth.uid();
   v_group_id uuid;
   v_group_name text;
+  v_archived boolean;
   v_payer_txn uuid;
   v_payee_txn uuid;
   v_note text;
@@ -592,8 +657,8 @@ begin
     raise exception using errcode = '22023', message = 'p_id is required';
   end if;
 
-  select s.group_id, g.name, s.payer_transaction_id, s.payee_transaction_id
-    into v_group_id, v_group_name, v_payer_txn, v_payee_txn
+  select s.group_id, g.name, g.is_archived, s.payer_transaction_id, s.payee_transaction_id
+    into v_group_id, v_group_name, v_archived, v_payer_txn, v_payee_txn
   from public.split_settlements s
   join public.split_groups g on g.id = s.group_id
   where s.id = p_id
@@ -603,6 +668,9 @@ begin
 
   if not public.is_split_group_member_or_above(v_group_id, v_uid) then
     raise exception using errcode = '42501', message = 'forbidden';
+  end if;
+  if v_archived then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
   end if;
 
   delete from public.transactions
@@ -1088,6 +1156,13 @@ begin
       message = 'A member can only be linked to your own account. Others join with an invite.';
   end if;
 
+  if (tg_op = 'INSERT' and (new.left_at is not null or new.archived_at is not null))
+     or (tg_op = 'UPDATE' and (new.left_at is distinct from old.left_at
+                               or new.archived_at is distinct from old.archived_at)) then
+    raise exception using errcode = '42501',
+      message = 'Leaving and removing members are managed by the server';
+  end if;
+
   return new;
 end;
 $$;
@@ -1478,11 +1553,12 @@ declare
   v_uid uuid := auth.uid();
   v_note text;
 begin
-  -- The person deleting the trip loses their own linked entries; everyone else
-  -- keeps theirs, unlinked, with a note.
+  -- The person deleting the trip loses their own linked entries, except ones
+  -- that paid a bill; everyone else keeps theirs, unlinked, with a note.
   if v_uid is not null then
     delete from public.transactions
     where user_id = v_uid
+      and linked_bill_id is null
       and (linked_split_expense_id in (select id from public.split_expenses where group_id = old.id)
         or linked_split_settlement_id in (select id from public.split_settlements where group_id = old.id));
   end if;
@@ -1651,7 +1727,8 @@ CREATE TABLE IF NOT EXISTS public.split_group_members (
     linked_user_id uuid,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid,
-    archived_at timestamp with time zone
+    archived_at timestamp with time zone,
+    left_at timestamp with time zone
 );
 
 ALTER TABLE public.split_group_members
@@ -1662,7 +1739,8 @@ ALTER TABLE public.split_group_members
     ADD COLUMN IF NOT EXISTS linked_user_id uuid,
     ADD COLUMN IF NOT EXISTS created_at timestamp with time zone DEFAULT now() NOT NULL,
     ADD COLUMN IF NOT EXISTS user_id uuid,
-    ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone;
+    ADD COLUMN IF NOT EXISTS archived_at timestamp with time zone,
+    ADD COLUMN IF NOT EXISTS left_at timestamp with time zone;
 
 -- Function: public.shares_split_group_with(uuid)
 CREATE OR REPLACE FUNCTION public.shares_split_group_with(p_other uuid) RETURNS boolean
@@ -1712,6 +1790,9 @@ begin
 
   if not public.is_split_group_owner(v_member.group_id, v_uid) then
     raise exception using errcode = '42501', message = 'Only a group admin can remove members.';
+  end if;
+  if exists (select 1 from public.split_groups where id = v_member.group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
   end if;
   if v_member.archived_at is not null then return v_member; end if;
   if v_member.linked_user_id = v_uid then
@@ -1800,6 +1881,10 @@ begin
     raise exception 'Split group not found';
   end if;
 
+  if v_group.is_archived then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
   insert into split_group_access (
     group_id,
     user_id,
@@ -1839,46 +1924,58 @@ begin
 
   v_account_name := coalesce(v_account_name, 'Member');
 
-  update split_group_members
-  set display_name = v_account_name,
-      user_id = v_uid,
-      linked_user_id = v_uid
-  where group_id = v_invite.group_id
-    and linked_user_id = v_uid;
+  -- A removed member keeps their account link; joining again reopens that row.
+  select m.id into v_existing_member_id
+  from split_group_members m
+  where m.group_id = v_invite.group_id
+    and m.linked_user_id = v_uid
+  for update;
 
-  if not found then
+  if v_existing_member_id is null then
+    -- Your own row from when you left, else a guest no account was ever linked to.
     select m.id into v_existing_member_id
     from split_group_members m
     where m.group_id = v_invite.group_id
       and m.linked_user_id is null
-      and lower(m.display_name) = lower(v_account_name)
+      and m.archived_at is null
+      and (
+        (m.left_at is not null and m.user_id = v_uid)
+        or (m.left_at is null and lower(m.display_name) = lower(v_account_name))
+      )
+    order by (m.left_at is not null) desc, m.created_at
     limit 1
     for update;
+  end if;
 
-    if v_existing_member_id is not null then
-      update split_group_members
-      set display_name = v_account_name,
-          user_id = v_uid,
-          linked_user_id = v_uid
-      where id = v_existing_member_id;
-    else
-      v_member_name := v_account_name;
-      v_suffix := 1;
-      loop
-        begin
-          insert into split_group_members (group_id, display_name, is_self, linked_user_id, user_id)
-          values (v_invite.group_id, v_member_name, false, v_uid, v_uid);
-          exit;
-        exception
-          when unique_violation then
-            v_suffix := v_suffix + 1;
-            if v_suffix > 20 then
-              raise exception 'Could not add you to this group: too many members named %', v_account_name;
-            end if;
-            v_member_name := v_account_name || ' (' || v_suffix || ')';
-        end;
-      end loop;
+  -- Names are unique among current members; add a number if yours is taken.
+  v_member_name := v_account_name;
+  v_suffix := 1;
+  while exists (
+    select 1 from split_group_members o
+    where o.group_id = v_invite.group_id
+      and o.archived_at is null
+      and o.left_at is null
+      and o.id is distinct from v_existing_member_id
+      and lower(o.display_name) = lower(v_member_name)
+  ) loop
+    v_suffix := v_suffix + 1;
+    if v_suffix > 20 then
+      raise exception 'Could not add you to this group: too many members named %', v_account_name;
     end if;
+    v_member_name := v_account_name || ' (' || v_suffix || ')';
+  end loop;
+
+  if v_existing_member_id is not null then
+    update split_group_members
+    set display_name = v_member_name,
+        user_id = v_uid,
+        linked_user_id = v_uid,
+        archived_at = null,
+        left_at = null
+    where id = v_existing_member_id;
+  else
+    insert into split_group_members (group_id, display_name, is_self, linked_user_id, user_id)
+    values (v_invite.group_id, v_member_name, false, v_uid, v_uid);
   end if;
 
   update split_group_invites
@@ -1905,6 +2002,7 @@ CREATE TABLE IF NOT EXISTS public.split_expenses (
     user_id uuid,
     linked_transaction_id uuid,
     CONSTRAINT split_expenses_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT split_expenses_amount_not_nan CHECK ((amount <> 'NaN'::numeric)),
     CONSTRAINT split_expenses_split_method_check CHECK ((split_method = ANY (ARRAY['equal'::text, 'exact'::text, 'percent'::text, 'shares'::text])))
 );
 
@@ -1929,6 +2027,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expenses'::regclass AND conname = 'split_expenses_amount_check') THEN
     ALTER TABLE ONLY public.split_expenses ADD CONSTRAINT split_expenses_amount_check CHECK ((amount > (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expenses'::regclass AND conname = 'split_expenses_amount_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.split_expenses DROP CONSTRAINT split_expenses_amount_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expenses'::regclass AND conname = 'split_expenses_amount_not_nan') THEN
+    ALTER TABLE ONLY public.split_expenses ADD CONSTRAINT split_expenses_amount_not_nan CHECK ((amount <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -2003,13 +2113,17 @@ begin
   select linked_user_id into v_payer_uid
   from split_group_members m
   where m.id = p_paid_by_member_id
-    and m.group_id = p_group_id;
+    and m.group_id = p_group_id
+    and m.archived_at is null
+    and m.left_at is null;
 
   if v_payer_uid is null and not exists (
     select 1
     from split_group_members m
     where m.id = p_paid_by_member_id
       and m.group_id = p_group_id
+      and m.archived_at is null
+      and m.left_at is null
   ) then
     raise exception 'Payer must be a member of the group';
   end if;
@@ -2073,6 +2187,8 @@ begin
       from split_group_members m
       where m.id = v_member_id
         and m.group_id = p_group_id
+        and m.archived_at is null
+        and m.left_at is null
     ) then
       raise exception 'Split includes a member outside this group';
     end if;
@@ -2271,6 +2387,10 @@ begin
     raise exception 'Split group not found';
   end if;
 
+  if exists (select 1 from public.split_groups where id = p_group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
   p_id := coalesce(p_id, gen_random_uuid());
 
   insert into public.split_group_invites (
@@ -2356,12 +2476,23 @@ begin
     raise exception 'You must assign another admin or delete the group first';
   end if;
 
+  if exists (
+    select 1
+    from split_group_members m
+    where m.group_id = p_group_id
+      and m.linked_user_id = v_uid
+      and public.split_member_net_balance(m.id) <> 0
+  ) then
+    raise exception 'Settle your balance in this trip before leaving.';
+  end if;
+
   delete from split_group_access
   where group_id = p_group_id
     and user_id = v_uid;
 
   update split_group_members
-  set linked_user_id = null
+  set linked_user_id = null,
+      left_at = now()
   where group_id = p_group_id
     and linked_user_id = v_uid;
 
@@ -2460,7 +2591,8 @@ CREATE TABLE IF NOT EXISTS public.split_settlements (
     user_id uuid,
     payer_transaction_id uuid,
     payee_transaction_id uuid,
-    CONSTRAINT split_settlements_amount_check CHECK ((amount > (0)::numeric))
+    CONSTRAINT split_settlements_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT split_settlements_amount_not_nan CHECK ((amount <> 'NaN'::numeric))
 );
 
 ALTER TABLE public.split_settlements
@@ -2484,6 +2616,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_settlements'::regclass AND conname = 'split_settlements_amount_check') THEN
     ALTER TABLE ONLY public.split_settlements ADD CONSTRAINT split_settlements_amount_check CHECK ((amount > (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_settlements'::regclass AND conname = 'split_settlements_amount_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.split_settlements DROP CONSTRAINT split_settlements_amount_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_settlements'::regclass AND conname = 'split_settlements_amount_not_nan') THEN
+    ALTER TABLE ONLY public.split_settlements ADD CONSTRAINT split_settlements_amount_not_nan CHECK ((amount <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -2524,18 +2668,23 @@ begin
     raise exception 'Split group not found';
   end if;
 
+  if exists (select 1 from public.split_groups where id = p_group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
+  -- Members who left can still settle what they owe; removed members can't.
   select linked_user_id, display_name into v_payer_uid, v_payer_name
-  from split_group_members where id = p_payer_member_id and group_id = p_group_id;
+  from split_group_members where id = p_payer_member_id and group_id = p_group_id and archived_at is null;
   if v_payer_uid is null and not exists (
-    select 1 from split_group_members m where m.id = p_payer_member_id and m.group_id = p_group_id
+    select 1 from split_group_members m where m.id = p_payer_member_id and m.group_id = p_group_id and m.archived_at is null
   ) then
     raise exception 'Payer is not in this group';
   end if;
 
   select linked_user_id, display_name into v_payee_uid, v_payee_name
-  from split_group_members where id = p_payee_member_id and group_id = p_group_id;
+  from split_group_members where id = p_payee_member_id and group_id = p_group_id and archived_at is null;
   if v_payee_uid is null and not exists (
-    select 1 from split_group_members m where m.id = p_payee_member_id and m.group_id = p_group_id
+    select 1 from split_group_members m where m.id = p_payee_member_id and m.group_id = p_group_id and m.archived_at is null
   ) then
     raise exception 'Payee is not in this group';
   end if;
@@ -2621,6 +2770,8 @@ declare
   v_payer_txn_id uuid;
   v_payee_txn_id uuid;
   v_txn record;
+  v_group_name text;
+  v_unlink_note text;
 begin
   perform set_config('kosha.trusted_write', 'true', true);
   if v_uid is null then
@@ -2647,7 +2798,8 @@ begin
   if not public.is_split_group_member_or_above(v_row.group_id, v_uid) then
     raise exception using errcode = '42501', message = 'forbidden';
   end if;
-  if exists (select 1 from public.split_groups where id = v_row.group_id and is_archived) then
+  select name into v_group_name from public.split_groups where id = v_row.group_id and not is_archived;
+  if not found then
     raise exception using errcode = '42501', message = 'This group is archived (read-only).';
   end if;
 
@@ -2673,8 +2825,12 @@ begin
       note            = v_note
   where id = p_settlement_id;
 
-  -- Keep the payer's expense row and the payee's income row; drop anything
-  -- that no longer belongs to the (possibly new) payer or payee.
+  v_unlink_note := format('This settlement was changed in "%s" by %s. The entry stays in your ledger.',
+                          v_group_name, public.split_actor_name(v_row.group_id, v_uid));
+
+  -- Keep the payer's expense row and the payee's income row while their
+  -- owners are still in the trip. Any other row is the editor's to delete,
+  -- or someone else's to keep, unlinked.
   for v_txn in
     select id, user_id, type
     from public.transactions
@@ -2683,7 +2839,8 @@ begin
        or id = v_row.payee_transaction_id
     for update
   loop
-    if v_txn.type = 'expense' and v_payer_uid is not null and v_txn.user_id = v_payer_uid and v_payer_txn_id is null then
+    if v_txn.type = 'expense' and v_payer_uid is not null and v_txn.user_id = v_payer_uid and v_payer_txn_id is null
+       and (v_txn.user_id = v_uid or public.has_split_group_access(v_row.group_id, v_txn.user_id)) then
       update public.transactions
       set date = v_date,
           amount = v_amount,
@@ -2692,7 +2849,8 @@ begin
           linked_split_settlement_id = p_settlement_id
       where id = v_txn.id;
       v_payer_txn_id := v_txn.id;
-    elsif v_txn.type = 'income' and v_payee_uid is not null and v_txn.user_id = v_payee_uid and v_payee_txn_id is null then
+    elsif v_txn.type = 'income' and v_payee_uid is not null and v_txn.user_id = v_payee_uid and v_payee_txn_id is null
+       and (v_txn.user_id = v_uid or public.has_split_group_access(v_row.group_id, v_txn.user_id)) then
       update public.transactions
       set date = v_date,
           amount = v_amount,
@@ -2701,8 +2859,13 @@ begin
           linked_split_settlement_id = p_settlement_id
       where id = v_txn.id;
       v_payee_txn_id := v_txn.id;
-    else
+    elsif v_txn.user_id = v_uid then
       delete from public.transactions where id = v_txn.id;
+    else
+      update public.transactions
+      set linked_split_settlement_id = null,
+          notes = concat_ws(E'\n', nullif(btrim(notes), ''), v_unlink_note)
+      where id = v_txn.id;
     end if;
   end loop;
 
@@ -2780,6 +2943,10 @@ begin
     raise exception 'Split group not found';
   end if;
 
+  if exists (select 1 from public.split_groups where id = p_group_id and is_archived) then
+    raise exception using errcode = '42501', message = 'This group is archived (read-only).';
+  end if;
+
   select * into v_target
   from split_group_access a
   where a.group_id = p_group_id
@@ -2823,7 +2990,9 @@ declare
   v_linked_txn uuid;
   v_existing_owner uuid;
   v_keep_txn boolean := false;
+  v_pays_bill boolean := false;
   v_payer_uid uuid;
+  v_old_members uuid[];
   v_sum numeric := 0;
   v_item jsonb;
   v_member_id uuid;
@@ -2871,7 +3040,8 @@ begin
     raise exception using errcode = '42501', message = 'This group is archived (read-only).';
   end if;
 
-  -- Payer must belong to the group; capture the app user it maps to (if any).
+  -- Payer must belong to the group, and still be in it unless they already
+  -- paid this expense; capture the app user it maps to (if any).
   select linked_user_id into v_payer_uid
   from public.split_group_members m
   where m.id = p_paid_by_member_id
@@ -2880,6 +3050,7 @@ begin
   if not exists (
     select 1 from public.split_group_members m
     where m.id = p_paid_by_member_id and m.group_id = v_group_id
+      and ((m.archived_at is null and m.left_at is null) or m.id = v_expense.paid_by_member_id)
   ) then
     raise exception 'Payer must be a member of the group';
   end if;
@@ -2890,7 +3061,7 @@ begin
   -- while they are still the payer and still in the group, and only its owner
   -- can delete it; otherwise it is unlinked and left in their ledger.
   if v_linked_txn is not null then
-    select user_id into v_existing_owner
+    select user_id, linked_bill_id is not null into v_existing_owner, v_pays_bill
     from public.transactions
     where id = v_linked_txn and linked_split_expense_id = p_expense_id;
   end if;
@@ -2899,6 +3070,16 @@ begin
     and v_existing_owner = v_payer_uid
     and public.has_split_group_access(v_group_id, v_existing_owner)
     and (v_existing_owner <> v_uid or coalesce(p_sync_transaction, true));
+
+  -- A row that paid a bill is never deleted or given a new amount here.
+  if coalesce(v_pays_bill, false)
+     and ((v_keep_txn and round(p_amount, 2) <> round(v_expense.amount, 2))
+          or (not v_keep_txn and v_existing_owner = v_uid)) then
+    if v_existing_owner = v_uid then
+      raise exception 'This expense paid one of your bills. Undo the payment in Bills first.';
+    end if;
+    v_keep_txn := false;
+  end if;
 
   if v_linked_txn is not null and not v_keep_txn then
     if v_existing_owner = v_uid then
@@ -2923,7 +3104,10 @@ begin
     notes             = nullif(btrim(coalesce(p_notes, '')), '')
   where id = p_expense_id;
 
-  -- Replace the splits.
+  -- Replace the splits. Members already on this expense stay allowed.
+  select coalesce(array_agg(member_id), '{}') into v_old_members
+  from public.split_expense_splits where expense_id = p_expense_id;
+
   delete from public.split_expense_splits where expense_id = p_expense_id;
 
   for v_item in select * from jsonb_array_elements(p_splits)
@@ -2941,7 +3125,8 @@ begin
     end if;
     if not exists (
       select 1 from public.split_group_members m
-      where m.id = v_member_id and m.group_id = v_group_id and m.archived_at is null
+      where m.id = v_member_id and m.group_id = v_group_id
+        and ((m.archived_at is null and m.left_at is null) or m.id = any(v_old_members))
     ) then
       raise exception 'Split includes a member outside this group';
     end if;
@@ -3443,7 +3628,8 @@ CREATE TABLE IF NOT EXISTS public.category_budgets (
     category text NOT NULL,
     monthly_limit numeric(12,2) NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
-    CONSTRAINT category_budgets_monthly_limit_check CHECK ((monthly_limit > (0)::numeric))
+    CONSTRAINT category_budgets_monthly_limit_check CHECK ((monthly_limit > (0)::numeric)),
+    CONSTRAINT category_budgets_monthly_limit_not_nan CHECK ((monthly_limit <> 'NaN'::numeric))
 );
 
 ALTER TABLE public.category_budgets
@@ -3461,6 +3647,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.category_budgets'::regclass AND conname = 'category_budgets_monthly_limit_check') THEN
     ALTER TABLE ONLY public.category_budgets ADD CONSTRAINT category_budgets_monthly_limit_check CHECK ((monthly_limit > (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.category_budgets'::regclass AND conname = 'category_budgets_monthly_limit_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((monthly_limit <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.category_budgets DROP CONSTRAINT category_budgets_monthly_limit_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.category_budgets'::regclass AND conname = 'category_budgets_monthly_limit_not_nan') THEN
+    ALTER TABLE ONLY public.category_budgets ADD CONSTRAINT category_budgets_monthly_limit_not_nan CHECK ((monthly_limit <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -3537,6 +3735,7 @@ CREATE TABLE IF NOT EXISTS public.liabilities (
     paid_at date,
     payment_txn_created boolean,
     CONSTRAINT liabilities_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT liabilities_amount_not_nan CHECK ((amount <> 'NaN'::numeric)),
     CONSTRAINT liabilities_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['upi'::text, 'cash'::text, 'bank'::text, 'card'::text]))),
     CONSTRAINT liabilities_recurrence_check CHECK ((recurrence = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'yearly'::text])))
 );
@@ -3565,6 +3764,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.liabilities'::regclass AND conname = 'liabilities_amount_check') THEN
     ALTER TABLE ONLY public.liabilities ADD CONSTRAINT liabilities_amount_check CHECK ((amount > (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.liabilities'::regclass AND conname = 'liabilities_amount_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.liabilities DROP CONSTRAINT liabilities_amount_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.liabilities'::regclass AND conname = 'liabilities_amount_not_nan') THEN
+    ALTER TABLE ONLY public.liabilities ADD CONSTRAINT liabilities_amount_not_nan CHECK ((amount <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -3668,7 +3879,8 @@ CREATE TABLE IF NOT EXISTS public.split_expense_splits (
     shares numeric(12,4),
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     user_id uuid,
-    CONSTRAINT split_expense_splits_share_check CHECK ((share >= (0)::numeric))
+    CONSTRAINT split_expense_splits_share_check CHECK ((share >= (0)::numeric)),
+    CONSTRAINT split_expense_splits_share_not_nan CHECK ((share <> 'NaN'::numeric))
 );
 
 ALTER TABLE public.split_expense_splits
@@ -3689,6 +3901,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expense_splits'::regclass AND conname = 'split_expense_splits_share_check') THEN
     ALTER TABLE ONLY public.split_expense_splits ADD CONSTRAINT split_expense_splits_share_check CHECK ((share >= (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expense_splits'::regclass AND conname = 'split_expense_splits_share_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((share <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.split_expense_splits DROP CONSTRAINT split_expense_splits_share_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.split_expense_splits'::regclass AND conname = 'split_expense_splits_share_not_nan') THEN
+    ALTER TABLE ONLY public.split_expense_splits ADD CONSTRAINT split_expense_splits_share_not_nan CHECK ((share <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -3717,6 +3941,7 @@ CREATE TABLE IF NOT EXISTS public.transactions (
     linked_bill_id uuid,
     linked_loan_id uuid,
     CONSTRAINT transactions_amount_check CHECK ((amount > (0)::numeric)),
+    CONSTRAINT transactions_amount_not_nan CHECK ((amount <> 'NaN'::numeric)),
     CONSTRAINT transactions_payment_mode_check CHECK ((payment_mode = ANY (ARRAY['upi'::text, 'credit_card'::text, 'debit_card'::text, 'cash'::text, 'net_banking'::text, 'wallet'::text, 'other'::text]))),
     CONSTRAINT transactions_recurrence_check CHECK (((recurrence = ANY (ARRAY['monthly'::text, 'quarterly'::text, 'yearly'::text])) OR (recurrence IS NULL))),
     CONSTRAINT transactions_type_check CHECK ((type = ANY (ARRAY['income'::text, 'expense'::text, 'investment'::text])))
@@ -3753,6 +3978,18 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.transactions'::regclass AND conname = 'transactions_amount_check') THEN
     ALTER TABLE ONLY public.transactions ADD CONSTRAINT transactions_amount_check CHECK ((amount > (0)::numeric));
+  END IF;
+END
+$do$;
+
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.transactions'::regclass AND conname = 'transactions_amount_not_nan'
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$CHECK ((amount <> 'NaN'::numeric))$c$) THEN
+    ALTER TABLE public.transactions DROP CONSTRAINT transactions_amount_not_nan;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.transactions'::regclass AND conname = 'transactions_amount_not_nan') THEN
+    ALTER TABLE ONLY public.transactions ADD CONSTRAINT transactions_amount_not_nan CHECK ((amount <> 'NaN'::numeric));
   END IF;
 END
 $do$;
@@ -4152,7 +4389,17 @@ CREATE INDEX IF NOT EXISTS idx_split_group_members_group ON public.split_group_m
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_split_group_members_group_linked_user_unique ON public.split_group_members USING btree (group_id, linked_user_id) WHERE (linked_user_id IS NOT NULL);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_split_group_members_group_name_unique ON public.split_group_members USING btree (group_id, lower(display_name));
+DO $do$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_catalog.pg_index i
+             WHERE i.indexrelid = pg_catalog.to_regclass('public.idx_split_group_members_group_name_unique')
+               AND i.indpred IS NULL) THEN
+    DROP INDEX public.idx_split_group_members_group_name_unique;
+  END IF;
+END
+$do$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_split_group_members_group_name_unique ON public.split_group_members USING btree (group_id, lower(display_name)) WHERE ((archived_at IS NULL) AND (left_at IS NULL));
 
 CREATE INDEX IF NOT EXISTS idx_split_group_members_linked_user ON public.split_group_members USING btree (linked_user_id) WHERE (linked_user_id IS NOT NULL);
 
@@ -4703,11 +4950,11 @@ $do$;
 DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.transactions'::regclass AND conname = 'transactions_linked_bill_id_fkey'
-             AND pg_catalog.pg_get_constraintdef(oid) <> $c$FOREIGN KEY (linked_bill_id) REFERENCES public.liabilities(id) ON DELETE CASCADE$c$) THEN
+             AND pg_catalog.pg_get_constraintdef(oid) <> $c$FOREIGN KEY (linked_bill_id) REFERENCES public.liabilities(id) ON DELETE SET NULL$c$) THEN
     ALTER TABLE public.transactions DROP CONSTRAINT transactions_linked_bill_id_fkey;
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_constraint WHERE conrelid = 'public.transactions'::regclass AND conname = 'transactions_linked_bill_id_fkey') THEN
-    ALTER TABLE ONLY public.transactions ADD CONSTRAINT transactions_linked_bill_id_fkey FOREIGN KEY (linked_bill_id) REFERENCES public.liabilities(id) ON DELETE CASCADE;
+    ALTER TABLE ONLY public.transactions ADD CONSTRAINT transactions_linked_bill_id_fkey FOREIGN KEY (linked_bill_id) REFERENCES public.liabilities(id) ON DELETE SET NULL;
   END IF;
 END
 $do$;

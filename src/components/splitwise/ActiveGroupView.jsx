@@ -2,6 +2,7 @@ import { Trash, Receipt, ArrowsLeftRight } from '@phosphor-icons/react'
 import { memo } from 'react'
 import Button from '../ui/Button'
 import SecureAvatar from '../ui/SecureAvatar'
+import { memberRole as getMemberRole } from '../../lib/tripMembers'
 
 const ActiveGroupView = memo(function ActiveGroupView({
   activeBanner,
@@ -104,22 +105,12 @@ const ActiveGroupView = memo(function ActiveGroupView({
               const net = round2(netRow?.net || 0)
               const isSelfMember = member.linked_user_id === authUserId
 
-              let memberRole = 'guest'
-              if (member.linked_user_id === activeGroup?.user_id) {
-                memberRole = 'admin'
-              } else if (member.linked_user_id) {
-                const role = roleByUserId.get(member.linked_user_id)
-                memberRole = role ? role : 'left'
-              } else if (member.user_id) {
-                const creatorHasAccess = roleByUserId.has(member.user_id)
-                if (!creatorHasAccess) {
-                  memberRole = 'left'
-                }
-              }
+              const memberRole = getMemberRole(member, { ownerUserId: activeGroup?.user_id, roleByUserId })
+              const isFormer = memberRole === 'left' || memberRole === 'removed'
 
               const roleBusy = saving === `member-role-${member.id}`
               const avatarUrl = resolveMemberAvatar(member)
-              const displayName = resolveMemberName(member)
+              const displayName = resolveMemberName(member, { withStatus: false })
               return (
                 <div key={member.id} className="mini-panel px-2.5 py-2 flex items-center justify-between gap-2">
                   <div className="flex min-w-0 items-center gap-2">
@@ -143,23 +134,23 @@ const ActiveGroupView = memo(function ActiveGroupView({
                         <p className="text-[12px] font-semibold text-ink truncate">
                           {displayName} {isSelfMember ? '(You)' : ''}
                         </p>
-                        {memberRole === 'left' && (
-                          <span className="rounded bg-rose-500/10 px-1.5 py-[1px] text-[11px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                            Left
+                        {isFormer && (
+                          <span className="rounded bg-danger/10 px-1.5 py-[1px] text-[11px] font-bold uppercase tracking-wider text-danger">
+                            {memberRole === 'removed' ? 'Removed' : 'Left'}
                           </span>
                         )}
                       </div>
                       <p className="text-[12px] font-medium text-ink-2 mb-0.5 leading-none">
-                        {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : memberRole === 'viewer' ? 'Viewer' : memberRole === 'left' ? 'Left Group' : 'Guest'}
+                        {memberRole === 'admin' ? 'Admin' : memberRole === 'member' ? 'Member' : memberRole === 'viewer' ? 'Viewer' : memberRole === 'left' ? 'Left Group' : memberRole === 'removed' ? 'Removed' : 'Guest'}
                       </p>
                       <p className={`text-[11px] tabular-nums ${net > 0.01 ? 'amt-income' : net < -0.01 ? 'amt-expense' : 'text-ink-3'}`}>
                         {net > 0.01 ? `gets ${fmt(net)}` : net < -0.01 ? `owes ${fmt(Math.abs(net))}` : 'settled'}
                       </p>
                     </div>
                   </div>
-                  {isGroupAdmin && !isSelfMember && !activeGroup.is_archived && (
+                  {isGroupAdmin && !isSelfMember && !activeGroup.is_archived && memberRole !== 'removed' && (
                     <div className="flex items-center gap-1.5 shrink-0">
-                      {!!member.linked_user_id && (
+                      {!!member.linked_user_id && !isFormer && (
                         <button
                           type="button"
                           onClick={() => {

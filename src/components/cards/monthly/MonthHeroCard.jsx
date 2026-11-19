@@ -57,7 +57,10 @@ const MonthHeroCard = memo(function MonthHeroCard({ month, year, data }) {
       </div>
 
       <p className="text-[11px] font-medium mb-1 tracking-wide" style={{ color: C.heroLabel }}>Monthly balance</p>
-      <p className={`${balanceClass} font-bold leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere] ${balance >= 0 ? 'text-white' : 'text-[#FFB3AF]'}`}>
+      <p
+        className={`${balanceClass} font-bold leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere] text-white`}
+        style={balance < 0 ? { color: C.heroNegative } : undefined}
+      >
         {balanceParts.main}
         {balanceParts.decimal && (
           <span className="text-[0.6em] font-semibold opacity-75 align-baseline ml-[0.04em]">

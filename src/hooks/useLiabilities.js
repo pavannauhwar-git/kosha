@@ -22,7 +22,7 @@ export const LIABILITY_PENDING_QUERY_KEY = (targetUserId) => ['liabilities', 'pe
 export const LIABILITY_PAID_QUERY_KEY = (targetUserId) => ['liabilities', 'paid', targetUserId]
 export const LIABILITY_MONTH_QUERY_KEY = (year, month, targetUserId) => ['liabilitiesMonth', year, month, targetUserId]
 const LIABILITY_COLUMNS =
-  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode, paid_at'
+  'id, user_id, description, amount, due_date, is_recurring, recurrence, paid, linked_transaction_id, payment_mode, paid_at, payment_txn_created'
 export const MONTH_LIABILITY_COLUMNS = 'id, description, amount, due_date, paid, is_recurring, recurrence, linked_transaction_id, payment_mode'
 
 function runInBackground(promise, scope) {
@@ -425,11 +425,13 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
 
     const snapshot = snapshotLiabilityCaches(targetUserId)
     suppress('liabilities')
-    const optimisticId = tempId
+    // The caller's draft ID, when given, makes a retried tap reuse the same row.
+    const { id: draftId, ...fields } = payload || {}
+    const optimisticId = draftId || tempId
     const nowIso = new Date().toISOString()
 
     optimisticallyInsertPendingLiability({
-      ...payload,
+      ...fields,
       id: optimisticId,
       paid: false,
       created_at: nowIso,
@@ -440,7 +442,7 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       const addFn = __testOverrides?.addLiability || addLiability
       const invalidateLiabilityFn = __testOverrides?.invalidateLiabilityCache || invalidateLiabilityCache
 
-      const created = await addFn(payload, optimisticId)
+      const created = await addFn(fields, optimisticId)
       // Lock already handled by withOptimisticGuard, no need for cancelQueries here
 
       optimisticallyDeleteLiabilityFromCache(optimisticId, targetUserId)
@@ -459,6 +461,13 @@ export async function addLiabilityMutation(payload, __testOverrides = null) {
       throw error
     }
   })
+}
+
+// The ledger entry the bill created when it was paid, which goes when the
+// bill is deleted. A linked existing expense (payment_txn_created false) stays.
+export function billPaymentTransactionId(bill) {
+  if (!bill?.linked_transaction_id || bill.payment_txn_created === false) return null
+  return bill.linked_transaction_id
 }
 
 export const LIABILITY_TO_TXN_MODE = { card: 'credit_card', bank: 'net_banking', upi: 'upi', cash: 'cash' }
@@ -653,10 +662,11 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
     }
 
     const cachedBill = getLiabilityFromCacheById(id, targetUserId)
+    const paymentTxnId = billPaymentTransactionId(cachedBill)
     const snapshot = snapshotLiabilityCaches(targetUserId)
     suppress('liabilities')
     optimisticallyDeleteLiabilityFromCache(id, targetUserId)
-    optimisticallyDeleteTransactionsByBillId(id, targetUserId)
+    optimisticallyDeleteTransactionsByBillId(id, targetUserId, paymentTxnId)
 
     try {
       const deleteFn = __testOverrides?.deleteLiability || deleteLiability
@@ -667,7 +677,7 @@ export async function deleteLiabilityMutation(id, __testOverrides = null) {
       await queryClient.cancelQueries({ queryKey: ['transactionsRecent'] })
 
       optimisticallyDeleteLiabilityFromCache(id, targetUserId)
-      optimisticallyDeleteTransactionsByBillId(id, targetUserId)
+      optimisticallyDeleteTransactionsByBillId(id, targetUserId, paymentTxnId)
 
       hapticSuccess()
 

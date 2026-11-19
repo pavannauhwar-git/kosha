@@ -44,6 +44,7 @@ export const C = {
   heroDimmer:      'var(--c-hero-dimmer)',
   heroDivider:     'var(--c-hero-divider)',
   heroStatBg:      'var(--c-hero-stat-bg)',
+  heroNegative:    'var(--c-hero-negative)',
 
   // ── Chart colours — vibrant clarity ───────────────────────────────
   chartIncome:     'var(--ds-income)',

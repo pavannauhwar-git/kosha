@@ -70,7 +70,7 @@ async function main() {
   checks.push(await runCheck('liabilities table + recurring columns accessible', async () => {
     const { error } = await client
       .from('liabilities')
-      .select('id, user_id, is_recurring, recurrence, paid, linked_transaction_id', { head: true, count: 'exact' })
+      .select('id, user_id, is_recurring, recurrence, paid, linked_transaction_id, payment_txn_created', { head: true, count: 'exact' })
       .eq('user_id', user.id)
     if (error) throw error
   }))
@@ -110,7 +110,7 @@ async function main() {
   checks.push(await runCheck('split_group_members table accessible', async () => {
     const { error } = await client
       .from('split_group_members')
-      .select('id, group_id, user_id, display_name, is_self', { head: true, count: 'exact' })
+      .select('id, group_id, user_id, display_name, is_self, archived_at, left_at', { head: true, count: 'exact' })
       .eq('user_id', user.id)
     if (error) throw error
   }))
