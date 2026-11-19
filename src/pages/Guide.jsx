@@ -311,7 +311,6 @@ export default function Guide() {
           <House size={16} className="text-ink-2" />
         </button>
       )}
-      contentClassName="px-4 pt-5 pb-24 max-w-[560px] mx-auto"
     >
       <div className="page-stack">
         <div className="fade-up fade-up-1 card p-0 overflow-hidden">

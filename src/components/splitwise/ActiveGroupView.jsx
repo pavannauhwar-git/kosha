@@ -47,7 +47,7 @@ const ActiveGroupView = memo(function ActiveGroupView({
   txnsBottomPadding,
 }) {
   return (
-    <div className="page-stack">
+    <div className="page-stack fade-up">
       <div className="relative overflow-hidden rounded-card">
         <div className="h-40 w-full bg-kosha-surface-2">
           <img src={activeBanner.src} alt={activeBanner.name} className="h-full w-full object-cover" />

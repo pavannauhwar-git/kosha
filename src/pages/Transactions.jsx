@@ -887,9 +887,9 @@ export default function Transactions() {
   return (
     <PageHeaderPage title="Transactions">
       <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
         className="page-stack"
       >
         {isInitialLoad && (
@@ -905,8 +905,9 @@ export default function Transactions() {
 
         {isNewUser && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
             className="card p-4 border-0"
           >
             <p className="section-label mb-1.5">Start here</p>

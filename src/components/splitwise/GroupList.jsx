@@ -14,7 +14,7 @@ const GroupList = memo(function GroupList({
   _isViewingPartner,
 }) {
   return (
-    <div className="page-stack">
+    <div className="page-stack fade-up">
       <div className="grid grid-cols-2 gap-2.5">
         <div className="card p-3">
           <p className="text-[11px] text-ink-3">Admin in</p>

@@ -107,7 +107,7 @@ export default function TransactionFilterBar({
 
   return (
     <>
-      <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-surface-2">
+      <div className="px-4 pt-3.5 pb-3 border-b border-kosha-border bg-kosha-card-header">
         <p className="text-[15px] font-semibold text-ink">Find and filter</p>
         <p className="text-[12px] text-ink-3 mt-0.5">Search by merchant or note, then narrow by date, type, category, and payment mode.</p>
 

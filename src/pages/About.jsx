@@ -4,8 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowSquareOut, House, ShieldCheck, Sparkle } from '@phosphor-icons/react'
 import {
   HeartIcon, CodeIcon, CurrencyInrIcon, CopyIcon, CheckIcon,
-  GithubLogoIcon, LockIcon, StarIcon, CaretDownIcon, CaretUpIcon,
-  DeviceMobileIcon,
+  GithubLogoIcon, LockIcon, DeviceMobileIcon,
 } from '@phosphor-icons/react'
 import { C } from '../lib/colors'
 import KoshaLogo from '../components/brand/KoshaLogo'
@@ -97,14 +96,9 @@ export default function About() {
   }, [location.hash])
   const [upiCopied, setUpiCopied] = useState(false)
   const { setSafeTimeout } = useSafeTimeout()
-  const [showAllVersions, setShowAllVersions] = useState(false)
   // 'idle' | 'fallback' — fallback shown on non-Android where upi:// won't work
   const [payState, setPayState] = useState('idle')
-  const currentRelease = CHANGELOG[0]
-  const olderReleases = CHANGELOG.slice(1)
-  const latestVersion = currentRelease?.version || '1.0.0'
-  const releaseCount = CHANGELOG.length
-  const shippedItems = CHANGELOG.reduce((sum, release) => sum + (release.items?.length || 0), 0)
+  const latestVersion = CHANGELOG[0]?.version || '1.0.0'
 
   async function copyUpi() {
     const res = await copyToClipboard(UPI_ID)
@@ -146,7 +140,7 @@ export default function About() {
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-5 sm:gap-6">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden">
-          <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+          <div className="px-4 py-5 bg-gradient-to-br from-brand-container/60 to-kosha-card-header border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
               <div className="flex items-center gap-2 mb-1.5">
                 <KoshaLogo size={28} />
@@ -164,21 +158,6 @@ export default function About() {
             <p className="text-[13px] text-ink-2 leading-relaxed">
               Track income, expenses, investments, bills, and loans in one place. Kosha gives you direction when you need it fast and precision when details matter.
             </p>
-
-            <div className="grid grid-cols-3 gap-2 mt-4">
-              <div className="mini-panel px-2.5 py-2 text-center">
-                <p className="text-[16px] font-semibold text-ink leading-none">{releaseCount}</p>
-                <p className="text-[11px] text-ink-3 mt-1">Releases</p>
-              </div>
-              <div className="mini-panel px-2.5 py-2 text-center">
-                <p className="text-[16px] font-semibold text-ink leading-none">{shippedItems}+</p>
-                <p className="text-[11px] text-ink-3 mt-1">Improvements</p>
-              </div>
-              <div className="mini-panel px-2.5 py-2 text-center bg-brand-container/40 border-brand/15">
-                <p className="text-[16px] font-semibold text-brand leading-none">0</p>
-                <p className="text-[11px] text-brand/80 mt-1">Ad trackers</p>
-              </div>
-            </div>
 
             <div className="mt-4">
               <Button
@@ -354,84 +333,6 @@ export default function About() {
                 Built with React, Supabase, Vite, Tailwind, and Framer Motion for fast interaction and clear information density.
               </p>
             </div>
-          </div>
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <SectionLabel>Release Timeline</SectionLabel>
-          <div className="card overflow-hidden p-0">
-            {currentRelease && (
-              <div>
-                <div className="flex items-center justify-between px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-brand-container border border-brand/15 flex items-center justify-center shrink-0">
-                      <StarIcon size={17} weight="duotone" color={C.brand} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-ink">v{currentRelease.version}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5">{currentRelease.date}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-brand-container text-brand border border-brand/15">
-                    Latest
-                  </span>
-                </div>
-                <Divider />
-                <div className="px-4 py-3.5 space-y-2.5">
-                  {currentRelease.items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ink-2 mt-[6px] shrink-0" />
-                      <p className="text-[13px] text-ink-2 leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {showAllVersions && olderReleases.map((release) => (
-              <div key={release.version}>
-                <Divider />
-                <div className="flex items-center justify-between px-4 py-3.5">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-kosha-surface-2 border border-kosha-border flex items-center justify-center shrink-0">
-                      <StarIcon size={17} weight="duotone" color={C.inkMuted} />
-                    </div>
-                    <div>
-                      <p className="text-[15px] font-semibold text-ink">v{release.version}</p>
-                      <p className="text-[12px] text-ink-3 mt-0.5">{release.date}</p>
-                    </div>
-                  </div>
-                  <span className="text-[11px] font-semibold px-2.5 py-1 rounded-pill bg-kosha-surface-2 text-ink-2 border border-kosha-border">
-                    Previous
-                  </span>
-                </div>
-                <Divider />
-                <div className="px-4 py-3.5 space-y-2.5">
-                  {release.items.map((item, i) => (
-                    <div key={i} className="flex items-start gap-2.5">
-                      <div className="w-1.5 h-1.5 rounded-full bg-ink-3 mt-[6px] shrink-0" />
-                      <p className="text-[13px] text-ink-3 leading-snug">{item}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-
-            {olderReleases.length > 0 && (
-              <>
-                <Divider />
-                <button
-                  type="button"
-                  onClick={() => setShowAllVersions(v => !v)}
-                  className="w-full flex items-center justify-center gap-1.5 px-4 py-3 text-[12px] font-semibold text-ink-3 hover:text-ink hover:bg-kosha-surface-2 transition-colors duration-150"
-                >
-                  {showAllVersions ? 'Hide older releases' : `Expand older releases (${olderReleases.length})`}
-                  {showAllVersions
-                    ? <CaretUpIcon size={12} weight="bold" />
-                    : <CaretDownIcon size={12} weight="bold" />}
-                </button>
-              </>
-            )}
           </div>
         </motion.div>
 
