@@ -26,6 +26,7 @@ import { downloadCsv, toCsv } from '../../lib/csv'
 import { fmt, fmtDate, daysUntil, dueLabel, dueChipClass, todayStr } from '../../lib/utils'
 import { fromRupees, toRupees } from '../../lib/paise'
 import { paidOnError } from '../../lib/paidOn'
+import { sanitizeAmountInput, validateAmount } from '../../lib/validateAmount'
 import { bandTextClass, scoreRiskBand } from '../../lib/insightBands'
 import { FINANCIAL_EVENT_ACTIONS } from '../../lib/auditLog'
 import { PAYMENT_MODES } from '../../lib/categories'
@@ -583,8 +584,10 @@ export default function Loans({
   async function handleAdd() {
     if (isAddSaving) return
     if (!form.counterparty.trim()) { setFormErr('Enter a name'); return }
-    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
+    const amountCheck = validateAmount(form.amount, { allowZero: false, min: 0 })
+    if (!amountCheck.ok) { setFormErr(amountCheck.error); return }
     if (!form.loan_date) { setFormErr('Select a loan date'); return }
+    if (form.due_date && form.due_date < form.loan_date) { setFormErr('The due date can’t be before the loan date'); return }
     const interestRate = String(form.interest_rate ?? '').trim() === '' ? 0 : Number(form.interest_rate)
     if (!Number.isFinite(interestRate) || interestRate < 0 || interestRate > 100) {
       setFormErr('Interest rate must be between 0 and 100% a year')
@@ -594,7 +597,7 @@ export default function Loans({
     const loanData = {
       direction: form.direction,
       counterparty: form.counterparty.trim(),
-      amount: +form.amount,
+      amount: toRupees(amountCheck.paise),
       interest_rate: Math.round(interestRate * 100) / 100,
       loan_date: form.loan_date,
       due_date: form.due_date || null,
@@ -635,10 +638,11 @@ export default function Loans({
     actionGuard.current = true
 
     if (!payLoan) { actionGuard.current = false; return }
-    const amtPaise = fromRupees(payAmount)
     const remainingPaise = fromRupees(payLoan.amount) - fromRupees(payLoan.amount_settled)
     if (remainingPaise <= 0n) { setPayErr('This loan is already fully settled.'); actionGuard.current = false; return }
-    if (amtPaise <= 0n) { setPayErr('Enter a valid positive amount'); actionGuard.current = false; return }
+    const amountCheck = validateAmount(payAmount, { allowZero: false, min: 0 })
+    if (!amountCheck.ok) { setPayErr(amountCheck.error); actionGuard.current = false; return }
+    const amtPaise = amountCheck.paise
     if (amtPaise > remainingPaise) { setPayErr(`Max payment is ${fmt(toRupees(remainingPaise))}`); actionGuard.current = false; return }
     const dateErr = paidOnError(payDate)
     if (dateErr) { setPayErr(dateErr); actionGuard.current = false; return }
@@ -1129,7 +1133,7 @@ export default function Loans({
         open={!!payLoan}
         onClose={dismissPaySheet}
         title="Record Payment"
-        initialFocusSelector='input[name="payment-amount"]'
+        initialFocusSelector='md-outlined-text-field[name="payment-amount"]'
         contentClassName="px-5 pt-2 overflow-x-hidden"
       >
 
@@ -1155,11 +1159,17 @@ export default function Loans({
                 <div className="mb-3">
                   <Input
                     label="Amount"
+                    name="payment-amount"
                     icon={<span className="text-brand font-bold">₹</span>}
-                    type="text" inputMode="decimal" pattern="[0-9.]*"
+                    type="text" inputMode="decimal"
                     placeholder="0"
                     value={payAmount}
-                    onChange={e => setPayAmount(e.target.value)}
+                    onChange={(e) => {
+                      const next = sanitizeAmountInput(e.target.value)
+                      if (next === null) return
+                      setPayAmount(next)
+                      setPayErr('')
+                    }}
                   />
                 </div>
 
@@ -1297,10 +1307,14 @@ export default function Loans({
                   <Input
                     label="Amount"
                     icon={<span className="text-brand font-bold">₹</span>}
-                    type="text" inputMode="decimal" pattern="[0-9.]*"
+                    type="text" inputMode="decimal"
                     placeholder="0"
                     value={form.amount}
-                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                    onChange={(e) => {
+                      const next = sanitizeAmountInput(e.target.value)
+                      if (next === null) return
+                      setForm(f => ({ ...f, amount: next }))
+                    }}
                   />
                 </div>
 

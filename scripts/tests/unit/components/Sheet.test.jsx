@@ -52,6 +52,16 @@ describe('Sheet component', () => {
     expect(handleClose).toHaveBeenCalledTimes(1)
   })
 
+  it('closes once when a tap fires both pointer-up and click', () => {
+    const handleClose = vi.fn()
+    render(<Sheet open={true} onClose={handleClose} title="Tap Sheet"><span /></Sheet>)
+
+    const closeButton = screen.getByRole('button', { name: /close/i })
+    fireEvent.pointerUp(closeButton)
+    fireEvent.click(closeButton)
+    expect(handleClose).toHaveBeenCalledTimes(1)
+  })
+
   it('closes on the Android back gesture through CloseWatcher', () => {
     const watchers = []
     class FakeCloseWatcher {

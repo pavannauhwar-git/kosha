@@ -9,3 +9,17 @@ export const MUTATION_RETRY = (failureCount, error) => {
   if (error?.code && /^(22|23|42|P0)/.test(String(error.code))) return false
   return true
 }
+
+// For commits that run on their own timer (an undoable delete) rather than a
+// tap: if another action on the same cache holds the optimistic lock, wait
+// for it instead of failing.
+export async function retryWhileBusy(fn, { attempts = 10, delayMs = 300 } = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      return await fn()
+    } catch (error) {
+      if (error?.message !== 'OPTIMISTIC_BUSY' || attempt >= attempts) throw error
+      await new Promise((resolve) => setTimeout(resolve, delayMs))
+    }
+  }
+}

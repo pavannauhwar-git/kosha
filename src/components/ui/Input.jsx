@@ -1,4 +1,4 @@
-import { forwardRef, useEffect, useRef } from 'react'
+import { forwardRef, useEffect, useLayoutEffect, useRef } from 'react'
 import '@material/web/textfield/outlined-text-field.js'
 
 /**
@@ -27,6 +27,11 @@ const Input = forwardRef(function Input(
 ) {
   const innerRef = useRef(null)
   const resolvedRef = ref || innerRef
+  const valueRef = useRef(value)
+
+  useLayoutEffect(() => {
+    valueRef.current = value
+  }, [value])
 
   useEffect(() => {
     const el = resolvedRef.current
@@ -38,6 +43,15 @@ const Input = forwardRef(function Input(
       if (onChange) {
         onChange(e)
       }
+      // When onChange rejects the keystroke, state and `value` don't change, so
+      // nothing re-renders and the field would keep showing text that isn't
+      // what gets saved. React's re-render for an accepted change is queued
+      // first, so by now valueRef holds whatever state ended up as.
+      if (valueRef.current === undefined) return
+      queueMicrotask(() => {
+        const current = String(valueRef.current ?? '')
+        if (el.value !== current) el.value = current
+      })
     }
 
     el.addEventListener('input', handleInput)

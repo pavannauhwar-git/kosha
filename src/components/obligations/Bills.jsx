@@ -33,6 +33,7 @@ import useWindowedList from '../../hooks/useWindowedList'
 import Sheet from '../ui/Sheet'
 import { useAppToast } from '../../context/ToastContext'
 import { toToastMessage } from '../../lib/errorTaxonomy'
+import { retryWhileBusy } from '../../lib/mutationRetry'
 import Input from '../ui/Input'
 import { paidOnError } from '../../lib/paidOn'
 import { readLocalStorage, writeLocalStorage } from '../../lib/safeStorage'
@@ -161,7 +162,7 @@ export default function Bills({
   const [hiddenBillIds, setHiddenBillIds] = useState(() => new Set())
 
   const { schedule, undo } = useUndoableDelete({
-    commit: (id) => deleteLiability.mutateAsync(id),
+    commit: (id) => retryWhileBusy(() => deleteLiability.mutateAsync(id)),
     restore: ({ bill, walletUserId, txnIds }) => {
       setHiddenBillIds(prev => { const n = new Set(prev); n.delete(bill.id); return n })
       import('../../hooks/useLiabilities').then(m => {
@@ -173,7 +174,7 @@ export default function Bills({
         return m.invalidateCache()
       })
     },
-    onError: (e) => pushToast(e.message || 'Could not delete bill.', { duration: 4200 }),
+    onError: (e) => pushToast(toToastMessage(e, 'Could not delete bill.'), { duration: 4200 }),
   })
 
   async function handleDelete(id) {
@@ -465,12 +466,13 @@ export default function Bills({
   async function handleAdd() {
     if (isSaving) return
     if (!form.description.trim()) { setFormErr('Enter a description'); return }
-    if (!form.amount || !Number.isFinite(+form.amount) || +form.amount <= 0) { setFormErr('Enter a valid positive amount'); return }
+    const amountCheck = validateAmount(form.amount, { allowZero: false, min: 0 })
+    if (!amountCheck.ok) { setFormErr(amountCheck.error); return }
     if (!form.due_date) { setFormErr('Select a due date'); return }
 
     const billData = {
       description: form.description.trim(),
-      amount: +form.amount,
+      amount: toRupees(amountCheck.paise),
       due_date: form.due_date,
       is_recurring: form.is_recurring,
       recurrence: form.is_recurring ? form.recurrence : null,
@@ -1023,10 +1025,13 @@ export default function Bills({
                     icon={<span className="text-brand font-bold">₹</span>}
                     type="text"
                     inputMode="decimal"
-                    pattern="[0-9.]*"
                     placeholder="0"
                     value={form.amount}
-                    onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                    onChange={(e) => {
+                      const next = sanitizeAmountInput(e.target.value)
+                      if (next === null) return
+                      setForm(f => ({ ...f, amount: next }))
+                    }}
                   />
                 </div>
 

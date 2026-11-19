@@ -130,8 +130,15 @@ export default function BudgetSheet({ open, onClose, budgets = [], byCategory = 
 
   const activeBudgetCount = budgets.filter((b) => b.monthly_limit > 0).length
 
+  // Unsaved amounts would otherwise still be there on reopen and look saved.
+  function handleClose() {
+    setDrafts({})
+    setError('')
+    onClose()
+  }
+
   return (
-    <Sheet open={open} onClose={onClose} title="Category Budgets">
+    <Sheet open={open} onClose={handleClose} title="Category Budgets">
       <div className="px-5 pt-1 pb-3 -mt-3">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-brand-container flex items-center justify-center">
