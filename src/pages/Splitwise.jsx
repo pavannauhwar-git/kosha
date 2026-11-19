@@ -54,7 +54,7 @@ export default function Splitwise() {
   return (
     <PageHeaderPage title="Splitwise">
       {!(showLoadError && !activeGroup) && (
-        <div className="mb-3">
+        <div className="mb-3 fade-up">
           {activeGroup ? (
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">

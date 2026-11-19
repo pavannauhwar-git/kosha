@@ -18,8 +18,6 @@ function getHeroStatClass(length) {
   return 'text-[clamp(0.7rem,2.7vw,0.88rem)] sm:text-[12px]'
 }
 
-const STAT_DELAYS = ['0ms', '60ms', '120ms']
-
 const DashboardHeroCard = memo(function DashboardHeroCard({
   loading = false,
   runningBalance,
@@ -93,9 +91,9 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
   return (
     <motion.div
       className="card-hero p-5 sm:p-6 relative overflow-hidden"
-      initial={{ opacity: 0, y: 16, scale: 0.97 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 340, damping: 28, mass: 0.9 }}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, ease: [0.05, 0.7, 0.1, 1] }}
     >
       {/* Top row — label + mode switch */}
       <div className="flex items-center justify-between mb-3.5 gap-2">
@@ -165,15 +163,14 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           { label: 'Earned',   val: earned   },
           { label: 'Spent',    val: spent    },
           { label: 'Invested', val: invested },
-        ].map((s, i) => {
+        ].map((s) => {
           const statText = fmt(s.val)
           const statValueClass = getHeroStatClass(statText.length)
 
           return (
             <div
               key={s.label}
-              className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip fade-in"
-              style={{ animationDelay: STAT_DELAYS[i] }}
+              className="flex-1 min-w-0 px-3 py-2.5 hero-stat-chip"
             >
               <p className="text-[11px] mb-0.5 truncate tracking-wide"
                 style={{ color: C.heroLabel }}>{s.label}</p>
