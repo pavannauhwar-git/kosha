@@ -48,7 +48,16 @@ import { downloadCsv, toCsv } from '../lib/csv'
 import { shareLink } from '../lib/share'
 import { readLocalStorage, writeLocalStorage, removeLocalStorage } from '../lib/safeStorage'
 import { round2 } from '../lib/paise'
+import {
+  expenseMemberOptions,
+  expensePaidOwnBill,
+  isActiveMember,
+  memberStatusSuffix,
+  settlementMemberOptions,
+} from '../lib/tripMembers'
 import useWindowedList from './useWindowedList'
+
+const BILL_PAYMENT_LOCKED = 'This expense paid one of your bills. Undo the payment in Bills first.'
 
 const BANNERS = [
   { id: 'goa', name: 'Goa (Beaches)', src: '/banners/goa.webp' },
@@ -245,6 +254,13 @@ export function useSplitwiseLogic() {
   })
   const [splitInputs, setSplitInputs] = useState({})
   const actionGuard = useRef(false)
+  // One ID per open sheet, so a retry after a lost response can't save twice.
+  const groupDraftIdRef = useRef(null)
+  const expenseDraftIdRef = useRef(null)
+  const settlementDraftIdRef = useRef(null)
+  useEffect(() => { if (!showCreateGroup) groupDraftIdRef.current = null }, [showCreateGroup])
+  useEffect(() => { if (!showAddExpense) expenseDraftIdRef.current = null }, [showAddExpense])
+  useEffect(() => { if (!showSettlement) settlementDraftIdRef.current = null }, [showSettlement])
   const expenseUndo = useUndoableDelete({
     commit: (id) => deleteExpenseAsync(id),
     restore: ({ groupId, expense }) => optimisticallyInsertSplitExpense(groupId, expense),
@@ -429,9 +445,9 @@ export function useSplitwiseLogic() {
     }
   }, [members, activeGroupId])
 
-  const resolveMemberName = (member) => {
+  const resolveMemberName = (member, { withStatus = true } = {}) => {
     const base = memberName(member, memberProfilesByUserId)
-    return member.archived_at ? `${base} (removed)` : base
+    return withStatus ? `${base}${memberStatusSuffix(member)}` : base
   }
   const resolveMemberAvatar = (member) => memberAvatarUrl(member, memberProfilesByUserId)
 
@@ -477,24 +493,12 @@ export function useSplitwiseLogic() {
     [groups, activeGroupId]
   )
 
-  const activeMembers = useMemo(() => {
-    return (members || []).filter(member => {
-      if (member.archived_at) return false
-      let memberRole = 'guest'
-      if (member.linked_user_id === activeGroup?.user_id) {
-        memberRole = 'admin'
-      } else if (member.linked_user_id) {
-        const role = roleByUserId.get(member.linked_user_id)
-        memberRole = role ? role : 'left'
-      } else if (member.user_id) {
-        const creatorHasAccess = roleByUserId.has(member.user_id)
-        if (!creatorHasAccess) {
-          memberRole = 'left'
-        }
-      }
-      return memberRole !== 'left'
-    })
-  }, [members, activeGroup?.user_id, roleByUserId])
+  const activeMembers = useMemo(() => (members || []).filter(isActiveMember), [members])
+  const expenseMembers = useMemo(() => expenseMemberOptions(members, editExpense), [members, editExpense])
+  const settlementMembers = useMemo(
+    () => settlementMemberOptions(members, balances, editSettlement),
+    [members, balances, editSettlement]
+  )
 
   useEffect(() => {
     if (!members.length) {
@@ -511,7 +515,7 @@ export function useSplitwiseLogic() {
     const preferredPayee = activeMembers.find((member) => member.linked_user_id !== authUserId)?.id || activeMembers[0]?.id || ''
 
     setExpenseForm((prev) => {
-      const nextPaidBy = prev.paid_by_member_id && activeMembers.some((member) => member.id === prev.paid_by_member_id)
+      const nextPaidBy = prev.paid_by_member_id && expenseMembers.some((member) => member.id === prev.paid_by_member_id)
         ? prev.paid_by_member_id
         : preferredPayer
       if (nextPaidBy === prev.paid_by_member_id) return prev
@@ -522,10 +526,10 @@ export function useSplitwiseLogic() {
     })
 
     setSettlementForm((prev) => {
-      const nextPayer = prev.payer_member_id && activeMembers.some((member) => member.id === prev.payer_member_id)
+      const nextPayer = prev.payer_member_id && settlementMembers.some((member) => member.id === prev.payer_member_id)
         ? prev.payer_member_id
         : preferredPayer
-      const nextPayee = prev.payee_member_id && activeMembers.some((member) => member.id === prev.payee_member_id)
+      const nextPayee = prev.payee_member_id && settlementMembers.some((member) => member.id === prev.payee_member_id)
         ? prev.payee_member_id
         : preferredPayee
       if (nextPayer === prev.payer_member_id && nextPayee === prev.payee_member_id) return prev
@@ -563,7 +567,7 @@ export function useSplitwiseLogic() {
 
       return changed ? next : prev
     })
-  }, [members, authUserId, activeMembers])
+  }, [members, authUserId, activeMembers, expenseMembers, settlementMembers])
 
   const isGroupAdmin = !!activeGroup && !isViewingPartner && (activeGroup.my_role === 'admin' || activeGroup.user_id === authUserId)
   // If a group is archived, NO ONE can manage expenses/members unless they unarchive it first
@@ -630,7 +634,8 @@ export function useSplitwiseLogic() {
 
     setSaving('group')
     try {
-      const created = await createGroupAsync({ name, selfDisplayName: accountDisplayName, id: crypto.randomUUID() })
+      groupDraftIdRef.current ||= crypto.randomUUID()
+      const created = await createGroupAsync({ name, selfDisplayName: accountDisplayName, id: groupDraftIdRef.current })
       optimisticallyInsertSplitGroup({ ...created, my_role: 'admin' }, activeWalletUserId)
       setActiveGroupId(created.id)
       setGroupForm({ name: '' })
@@ -786,6 +791,11 @@ export function useSplitwiseLogic() {
       return
     }
 
+    if (Math.abs(selfNet) >= 0.01) {
+      pushToast('Settle your balance in this trip before leaving.')
+      return
+    }
+
     if (!window.confirm(`Leave “${activeGroup?.name || 'this trip'}”? Your own entries stay in your transactions, but you won’t see this trip any more.`)) return
 
     const groupId = activeGroupId
@@ -811,6 +821,11 @@ export function useSplitwiseLogic() {
       pushToast('Name is required.')
       return
     }
+    const nameTaken = `Someone in this trip is already called ${name}. Use a different name.`
+    if (activeMembers.some((member) => String(member.display_name || '').trim().toLowerCase() === name.toLowerCase())) {
+      pushToast(nameTaken)
+      return
+    }
 
     setSaving('add-member')
     try {
@@ -819,15 +834,14 @@ export function useSplitwiseLogic() {
       setShowAddMember(false)
       setNewMemberName('')
     } catch (err) {
-      pushToast(toToastMessage(err, 'Could not add member.'))
+      pushToast(err?.code === '23505' ? nameTaken : toToastMessage(err, 'Could not add member.'))
     } finally {
       setSaving('')
     }
   }
 
   function buildSplitsPayload(method, amount) {
-    const allowedIds = new Set(activeMembers.map((member) => member.id))
-    for (const split of editExpense?.split_expense_splits || []) allowedIds.add(split.member_id)
+    const allowedIds = new Set(expenseMembers.map((member) => member.id))
     const selectedMemberIds = members
       .filter((member) => allowedIds.has(member.id))
       .filter((member) => splitInputs[member.id]?.enabled)
@@ -908,6 +922,11 @@ export function useSplitwiseLogic() {
       pushToast('Select who paid for this expense.')
       return
     }
+    if (editExpense && expensePaidOwnBill(editExpense, authUserId)
+      && (amount !== round2(editExpense.amount) || expenseForm.paid_by_member_id !== editExpense.paid_by_member_id)) {
+      pushToast(BILL_PAYMENT_LOCKED)
+      return
+    }
 
     let splits
     try {
@@ -950,7 +969,7 @@ export function useSplitwiseLogic() {
           notes: expenseForm.notes,
           splits,
           transactionCategory: expenseForm.transaction_category,
-          id: crypto.randomUUID(),
+          id: (expenseDraftIdRef.current ||= crypto.randomUUID()),
         })
       }
 
@@ -1021,7 +1040,7 @@ export function useSplitwiseLogic() {
           amount,
           settledAt: settlementForm.settled_at,
           note: settlementForm.note,
-          id: crypto.randomUUID(),
+          id: (settlementDraftIdRef.current ||= crypto.randomUUID()),
         })
       }
       setSettlementForm((prev) => ({
@@ -1119,6 +1138,10 @@ export function useSplitwiseLogic() {
 
     const expense = expenses.find(e => e.id === expenseId)
     if (!expense) return
+    if (expensePaidOwnBill(expense, authUserId)) {
+      pushToast(BILL_PAYMENT_LOCKED)
+      return
+    }
 
     const gid = activeGroupId
     optimisticallyDeleteSplitExpense(gid, expenseId)
@@ -1215,7 +1238,7 @@ export function useSplitwiseLogic() {
 
   return {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, balances, suggestedTransfers, loading, groupsLoading, error,
-    loadError, retryLoad, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
+    loadError, retryLoad, activeGroup, activeMembers, expenseMembers, settlementMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
     showCreateGroup, setShowCreateGroup, showAddExpense, setShowAddExpense, showSettlement, setShowSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, setSavedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,

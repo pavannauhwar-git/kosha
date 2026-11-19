@@ -21,7 +21,7 @@ import PartnerViewBanner from '../components/common/PartnerViewBanner'
 export default function Splitwise() {
   const {
     activeGroupId, setActiveGroupId, groups, members, expenses, settlements, groupsLoading,
-    loadError, retryLoad, activeGroup, activeMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
+    loadError, retryLoad, activeGroup, expenseMembers, settlementMembers, isGroupAdmin, canManageGroup, isViewOnly, isViewingPartner, methodLabel,
     showCreateGroup, setShowCreateGroup, showAddExpense, showSettlement, showAddMember, setShowAddMember,
     newMemberName, setNewMemberName, saving, consumingInvite, invitePreview, editExpense, setEditExpense, editSettlement, setEditSettlement,
     showBannerPicker, setShowBannerPicker, savedBannerId, showEditGroup, setShowEditGroup, editGroupForm, setEditGroupForm,
@@ -391,7 +391,7 @@ export default function Splitwise() {
                     label="Paid By"
                     value={expenseForm.paid_by_member_id}
                     onChange={(event) => setExpenseForm((prev) => ({ ...prev, paid_by_member_id: event.target.value }))}
-                    options={activeMembers.map((member) => ({
+                    options={expenseMembers.map((member) => ({
                       value: member.id,
                       label: resolveMemberName(member),
                     }))}
@@ -417,7 +417,7 @@ export default function Splitwise() {
                 <div className="card p-3 mb-3">
                   <p className="text-[11px] text-ink-3 mb-2">Participants ({methodLabel} split)</p>
                   <div className="space-y-2">
-                    {activeMembers.map((member) => {
+                    {expenseMembers.map((member) => {
                       const current = splitInputs[member.id] || defaultSplitInput()
                       return (
                         <div key={member.id} className="mini-panel px-2 py-2 flex items-center gap-2">
@@ -535,7 +535,7 @@ export default function Splitwise() {
                     label="Payer"
                     value={settlementForm.payer_member_id}
                     onChange={(event) => setSettlementForm((prev) => ({ ...prev, payer_member_id: event.target.value }))}
-                    options={activeMembers.map((member) => ({
+                    options={settlementMembers.map((member) => ({
                       value: member.id,
                       label: resolveMemberName(member),
                     }))}
@@ -547,7 +547,7 @@ export default function Splitwise() {
                     label="Payee"
                     value={settlementForm.payee_member_id}
                     onChange={(event) => setSettlementForm((prev) => ({ ...prev, payee_member_id: event.target.value }))}
-                    options={activeMembers.map((member) => ({
+                    options={settlementMembers.map((member) => ({
                       value: member.id,
                       label: resolveMemberName(member),
                     }))}

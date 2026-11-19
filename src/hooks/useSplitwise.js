@@ -39,9 +39,9 @@ const splitSettlementsKey = (groupId) => ['splitwise', 'settlements', groupId ||
 const GROUP_COLUMNS = 'id, name, created_at, updated_at, user_id, is_archived, banner_id'
 const ACCESS_COLUMNS = 'group_id, role'
 const GROUP_ACCESS_COLUMNS = 'id, group_id, user_id, role'
-const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, user_id, created_at, archived_at'
+const MEMBER_COLUMNS = 'id, group_id, display_name, is_self, linked_user_id, user_id, created_at, archived_at, left_at'
 const EXPENSE_COLUMNS =
-  'id, group_id, paid_by_member_id, description, amount, expense_date, split_method, notes, created_at, split_expense_splits(id, member_id, share, percent, shares), transactions!linked_transaction_id(category)'
+  'id, group_id, paid_by_member_id, description, amount, expense_date, split_method, notes, created_at, split_expense_splits(id, member_id, share, percent, shares), transactions!linked_transaction_id(category, linked_bill_id, user_id)'
 const SETTLEMENT_COLUMNS =
   'id, group_id, payer_member_id, payee_member_id, amount, settled_at, note, created_at'
 const EMPTY_ROWS = []

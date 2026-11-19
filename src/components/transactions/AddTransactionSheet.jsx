@@ -159,10 +159,10 @@ function SwipeManagePickerRow({
             onClick={handleDeleteTap}
             className="w-[70px] flex flex-col items-center justify-center gap-1 px-5
                      active:scale-[0.96] active:opacity-80 transition-all duration-200 ease-[cubic-bezier(0.2,0,0,1)] will-change-transform"
-            style={{ backgroundColor: 'rgba(232,69,60,0.96)', color: 'rgba(255,255,255,1)' }}
+            style={{ backgroundColor: 'var(--ds-danger)', color: 'var(--ds-on-danger)' }}
           >
             <Trash size={18} weight="bold" color="currentColor" />
-            <span className="text-[11px] font-semibold" style={{ color: 'rgba(255,255,255,1)' }}>
+            <span className="text-[11px] font-semibold">
               Delete
             </span>
           </button>
@@ -779,6 +779,7 @@ function AddTransactionSheetInner({ onClose, editTxn, duplicateTxn, initialType 
           .select('id, is_self, linked_user_id, user_id')
           .eq('group_id', splitGroupId)
           .is('archived_at', null)
+          .is('left_at', null)
 
         if (memErr) throw memErr
 
