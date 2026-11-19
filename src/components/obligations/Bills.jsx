@@ -9,6 +9,8 @@ import {
   markLiabilityPaidMutation,
   undoLiabilityPaymentMutation,
   deleteLiabilityMutation,
+  optimisticallyDeleteLiabilityFromCache,
+  billPaymentTransactionId,
   LIABILITY_TO_TXN_MODE,
 } from '../../hooks/useLiabilities'
 import { useAppMutation } from '../../hooks/useAppMutation'
@@ -120,6 +122,7 @@ export default function Bills({
   const [highlightedBillId, setHighlightedBillId] = useState(null)
   const [showGuideHint, setShowGuideHint] = useState(true)
   const actionGuard = useRef(false)
+  const billDraftIdRef = useRef(null)
 
   const [form, setForm] = useState(() => createInitialBillForm())
   const [formErr, setFormErr] = useState('')
@@ -180,9 +183,9 @@ export default function Bills({
     if (!bill) return false
 
     setHiddenBillIds(prev => { const n = new Set(prev); n.add(id); return n })
-    import('../../hooks/useLiabilities').then(m => m.optimisticallyDeleteLiabilityFromCache(id, activeWalletUserId))
+    optimisticallyDeleteLiabilityFromCache(id, activeWalletUserId)
     const m = await import('../../hooks/useTransactions')
-    const txnIds = m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId) || new Set()
+    const txnIds = m.optimisticallyDeleteTransactionsByBillId(id, activeWalletUserId, billPaymentTransactionId(bill)) || new Set()
     
     const toastId = pushToast('Bill deleted.', {
       action: () => { if (undo(id)) pushToast('Deletion canceled.', { duration: 2200 }) },
@@ -195,6 +198,7 @@ export default function Bills({
   }
 
   const closeAddBillSheet = useCallback(() => {
+    billDraftIdRef.current = null
     setShowAdd(false)
     setEditBill(null)
     setFormErr('')
@@ -504,7 +508,8 @@ export default function Bills({
     }
 
     try {
-      await addLiability.mutateAsync(billData)
+      billDraftIdRef.current ||= crypto.randomUUID()
+      await addLiability.mutateAsync({ ...billData, id: billDraftIdRef.current })
 
       setTab('pending')
       closeAddBillSheet()

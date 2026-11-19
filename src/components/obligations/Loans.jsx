@@ -85,6 +85,9 @@ export default function Loans({
   const [deletingId] = useState(null)
   const { pushToast, dismissToast } = useAppToast()
   const actionGuard = useRef(false)
+  // One ID per open sheet, so a retry after a lost response can't save twice.
+  const loanDraftIdRef = useRef(null)
+  const paymentDraftIdRef = useRef(null)
   const [overflowLoanId, setOverflowLoanId] = useState(null)
   const overflowLoanRef = useRef(null)
   const [highlightLoanId, setHighlightLoanId] = useState(null)
@@ -193,6 +196,7 @@ export default function Loans({
   }, [])
 
   const closePaySheet = useCallback(() => {
+    paymentDraftIdRef.current = null
     setPayLoan(null)
     setPayAmount('')
     setPayErr('')
@@ -565,6 +569,7 @@ export default function Loans({
   }, [])
 
   const closeAddLoanSheet = useCallback(() => {
+    loanDraftIdRef.current = null
     setShowAdd(false)
     setEditLoan(null)
     resetForm()
@@ -616,7 +621,8 @@ export default function Loans({
     }
 
     try {
-      await addLoanAsync({ ...loanData, id: crypto.randomUUID(), amount_settled: 0, settled: false })
+      loanDraftIdRef.current ||= crypto.randomUUID()
+      await addLoanAsync({ ...loanData, id: loanDraftIdRef.current, amount_settled: 0, settled: false })
       setTab(loanData.direction)
       closeAddLoanSheet()
     } catch (e) {
@@ -642,7 +648,8 @@ export default function Loans({
     const settlesInFull = amtPaise === remainingPaise
     const save = settlesInFull ? settleLoanAsync : recordLoanPaymentAsync
     try {
-      await save({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: crypto.randomUUID(), paidOn: payDate, paymentMode: payMode })
+      paymentDraftIdRef.current ||= crypto.randomUUID()
+      await save({ loan: payLoan, paymentAmount: toRupees(amtPaise), id: paymentDraftIdRef.current, paidOn: payDate, paymentMode: payMode })
       closePaySheet()
     } catch (e) {
       pushToast(toToastMessage(e, settlesInFull ? 'Could not settle loan.' : 'Could not record payment.'))

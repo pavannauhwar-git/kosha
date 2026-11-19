@@ -26,6 +26,16 @@ describe('addLiabilityMutation', () => {
     const pending = queryClient.getQueryData(LIABILITY_PENDING_QUERY_KEY(UID))
     expect(pending.map((row) => row.id)).toEqual([clientId])
   })
+
+  it('uses the caller’s draft id, so tapping Save again after a lost response reuses it', async () => {
+    const draftId = '33333333-3333-4333-8333-333333333333'
+    const addLiability = vi.fn(async (payload, clientId) => ({ ...payload, id: clientId, paid: false }))
+    const deps = { addLiability, invalidateLiabilityCache: vi.fn() }
+    await addLiabilityMutation({ id: draftId, description: 'Internet', amount: 999, due_date: '2026-01-20' }, deps)
+    await addLiabilityMutation({ id: draftId, description: 'Internet', amount: 999, due_date: '2026-01-20' }, deps)
+    expect(addLiability.mock.calls.map((call) => call[1])).toEqual([draftId, draftId])
+    expect('id' in addLiability.mock.calls[0][0]).toBe(false)
+  })
 })
 
 describe('MUTATION_RETRY', () => {
