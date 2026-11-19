@@ -8,7 +8,7 @@ export default function PageBackHeaderPage({
   rootClassName = 'min-h-dvh bg-kosha-bg',
   rootStyle,
   headerClassName = 'mb-2',
-  contentClassName = 'px-4 pt-5 pb-24 max-w-[560px] mx-auto',
+  contentClassName = 'page min-h-0',
 }) {
   return (
     <div className={rootClassName} style={rootStyle}>

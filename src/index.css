@@ -581,7 +581,7 @@ a,
     --c-hero-accent: #FFFF99;
     --c-hero-accent-bg: rgba(255, 255, 153, 0.15);
     --c-hero-accent-fill: #FFFF99;
-    --c-hero-label: rgba(255, 255, 255, 0.70);
+    --c-hero-label: rgba(255, 255, 255, 0.90);
     --c-hero-dimmer: rgba(255, 255, 255, 0.45);
     --c-hero-divider: rgba(255, 255, 255, 0.12);
     --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
@@ -618,8 +618,10 @@ a,
     isolation: isolate;
   }
 
+  /* Dark --ds-primary (#3A8BFF) is too light for white and coloured text on
+     top of it; these deeper blues keep every hero label at 4.5:1 or better. */
   .dark .card-hero {
-    background: linear-gradient(135deg, var(--ds-primary) 0%, var(--ds-primary-container) 100%);
+    background: linear-gradient(135deg, #0842A0 0%, #002A66 100%);
     border-radius: var(--md-sys-shape-xl); /* Symmetrical M3 Extra Large (28px) rounded corners */
     border: none;
     box-shadow:
@@ -1406,7 +1408,7 @@ a,
       width: 3.75rem;
       height: 3.75rem;
       bottom: calc(var(--nav-height) + 1.25rem);
-      right: max(1.25rem, calc((100vw - var(--app-shell-max)) / 2 + 1.25rem));
+      right: max(1.5rem, calc((100vw - var(--app-shell-max)) / 2 + 1.5rem));
     }
 
     .chip-control {
@@ -1466,7 +1468,7 @@ a,
     .fab-loans {
       width: 4rem;
       height: 4rem;
-      right: max(1.5rem, calc((100vw - var(--app-shell-max)) / 2 + 1.5rem));
+      right: max(2rem, calc((100vw - var(--app-shell-max)) / 2 + 2rem));
     }
 
     .card.p-4 {
@@ -1475,6 +1477,16 @@ a,
 
     .card.p-5 {
       padding: 1.4rem;
+    }
+  }
+
+  /* Wide windows: the FAB sits in the gutter, 1rem right of the cards, so it
+     never covers amounts. Below this width the gutter is too narrow for it. */
+  @media (min-width: 1000px) {
+    .fab,
+    .fab-bills,
+    .fab-loans {
+      right: calc((100vw - var(--app-shell-max)) / 2 - 3rem);
     }
   }
 

@@ -280,11 +280,9 @@ export default function ReportBug() {
         </button>
       )}
       rootStyle={{ paddingBottom: 'env(safe-area-inset-bottom, 0.75rem)' }}
-      contentClassName="mx-auto max-w-[560px]"
     >
 
-      {/* ── Content — constrained ──────────────────────────────────── */}
-      <div className="px-4 pt-4 pb-36 page-stack">
+      <div className="page-stack">
         {submitted ? (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
@@ -516,7 +514,7 @@ export default function ReportBug() {
       {!submitted && (
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-kosha-border bg-kosha-bg/95 backdrop-blur-md">
           <div
-            className="mx-auto max-w-[560px] px-4 pt-3 grid grid-cols-2 gap-2"
+            className="app-topbar-inner pt-3 grid grid-cols-2 gap-2"
             style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
           >
             <Button

@@ -235,9 +235,11 @@ export default function Obligations() {
               )}
 
               {/* Footer row */}
-              <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-surface-2">
+              <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-card-header">
                 <span className="text-caption font-semibold text-ink-3">
-                  {pending.length} bill{pending.length !== 1 ? 's' : ''} pending
+                  {pending.length > 0
+                    ? `${pending.length} bill${pending.length !== 1 ? 's' : ''} pending`
+                    : paid.length > 0 ? 'View history' : isViewingPartner ? 'Open bills' : 'Add a bill'}
                 </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>
@@ -313,9 +315,11 @@ export default function Obligations() {
               )}
 
               {/* Footer row */}
-              <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-surface-2">
+              <div className="px-4 py-2.5 border-t border-kosha-border flex items-center justify-between bg-kosha-card-header">
                 <span className="text-caption font-semibold text-ink-3">
-                  {given.length + taken.length} active loan{(given.length + taken.length) !== 1 ? 's' : ''}
+                  {(given.length + taken.length) > 0
+                    ? `${given.length + taken.length} active loan${(given.length + taken.length) !== 1 ? 's' : ''}`
+                    : settled.length > 0 ? 'View history' : isViewingPartner ? 'Open loans' : 'Log a loan'}
                 </span>
                 <CaretRight size={15} className="text-ink-4 ml-auto" />
               </div>

@@ -109,7 +109,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <button
             type="button"
             onClick={() => onSetHeroMode?.('balance')}
-            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'balance' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'balance' ? 'text-white' : 'text-white/90 hover:text-white'}`}
             style={heroMode === 'balance' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
           >
             Balance
@@ -117,7 +117,7 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
           <button
             type="button"
             onClick={() => onSetHeroMode?.('safe')}
-            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'safe' ? 'text-white' : 'text-white/70 hover:text-white'}`}
+            className={`h-6 px-2.5 rounded-pill text-[11px] font-semibold transition-colors ${heroMode === 'safe' ? 'text-white' : 'text-white/90 hover:text-white'}`}
             style={heroMode === 'safe' ? { background: 'rgba(255,255,255,0.2)' } : undefined}
           >
             Safe
