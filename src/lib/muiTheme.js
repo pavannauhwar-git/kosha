@@ -1,17 +1,20 @@
 import { createTheme } from '@mui/material/styles'
+import { BRAND_COLORS } from './brandColors'
 
 export const getMuiTheme = (mode) => {
   const isDark = mode === 'dark'
+  const brand = isDark ? BRAND_COLORS.dark : BRAND_COLORS.light
 
   return createTheme({
     palette: {
       mode,
       primary: {
-        main: isDark ? '#A8C7FA' : '#0B57D0',
-        dark: isDark ? '#D3E3FD' : '#0842A0',
-        light: isDark ? '#0B57D0' : '#4DA6FF',
-        container: isDark ? '#004A77' : '#D3E3FD',
-        onContainer: isDark ? '#D3E3FD' : '#041E49',
+        main: brand.primary,
+        dark: brand.primaryDark,
+        light: brand.primaryLight,
+        contrastText: brand.onPrimary,
+        container: brand.primaryContainer,
+        onContainer: brand.onPrimaryContainer,
       },
       secondary: {
         main: isDark ? '#C4C7C5' : '#444746',
@@ -83,18 +86,18 @@ export const getMuiTheme = (mode) => {
             },
           },
           containedPrimary: {
-            backgroundColor: isDark ? '#A8C7FA' : '#0B57D0',
-            color: isDark ? '#041E49' : '#FFFFFF',
+            backgroundColor: 'var(--ds-primary)',
+            color: 'var(--ds-on-primary)',
             '&:hover': {
-              backgroundColor: isDark ? '#D3E3FD' : '#0842A0',
+              backgroundColor: 'var(--ds-primary-dark)',
             },
           },
           outlinedPrimary: {
             borderColor: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)',
-            color: isDark ? '#A8C7FA' : '#0B57D0',
+            color: 'var(--ds-primary)',
             '&:hover': {
-              backgroundColor: isDark ? 'rgba(168,199,250,0.08)' : 'rgba(11,87,208,0.04)',
-              borderColor: isDark ? '#A8C7FA' : '#0B57D0',
+              backgroundColor: isDark ? 'rgba(var(--ds-primary-rgb), 0.08)' : 'rgba(var(--ds-primary-rgb), 0.04)',
+              borderColor: 'var(--ds-primary)',
             },
           },
         },
@@ -104,10 +107,10 @@ export const getMuiTheme = (mode) => {
           root: {
             borderRadius: '16px',
             '&:hover .MuiOutlinedInput-notchedOutline': {
-              borderColor: isDark ? '#A8C7FA' : '#0B57D0',
+              borderColor: 'var(--ds-primary)',
             },
             '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: isDark ? '#A8C7FA' : '#0B57D0',
+              borderColor: 'var(--ds-primary)',
               borderWidth: '2px',
             },
           },

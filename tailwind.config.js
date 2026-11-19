@@ -1,3 +1,17 @@
+// Tailwind can't apply an opacity modifier (`bg-brand/20`) to a plain `var()`
+// colour, so those classes generated nothing. Each `var()` colour becomes a
+// function: the variable as-is without a modifier, a color-mix blend with one.
+function withAlpha(colors) {
+  return Object.fromEntries(Object.entries(colors).map(([name, value]) => {
+    if (!/^var\(--[\w-]+\)$/.test(value)) return [name, value]
+    return [name, ({ opacityValue } = {}) => {
+      const pct = Math.round(Number(opacityValue) * 1000) / 10
+      if (opacityValue === undefined || !Number.isFinite(pct) || pct >= 100) return value
+      return `color-mix(in srgb, ${value} ${Math.max(0, pct)}%, transparent)`
+    }]
+  }))
+}
+
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
@@ -7,7 +21,7 @@ export default {
   },
   theme: {
     extend: {
-      colors: {
+      colors: withAlpha({
         /* ── App backgrounds — Vibrant Clarity ─────────────────────── */
         'kosha-bg':            'var(--ds-surface-dim)',
         'kosha-bg-2':          'var(--ds-surface-container)',
@@ -68,7 +82,7 @@ export default {
         'on-grad-2': 'rgba(255,255,255,0.75)',
         'success':   'var(--ds-success)',
         'danger':    'var(--ds-danger)',
-      },
+      }),
 
       fontFamily: {
         sans: ['"Inter Variable"', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
