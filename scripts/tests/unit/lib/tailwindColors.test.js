@@ -19,6 +19,12 @@ describe('tailwind colour tokens', () => {
 
   it('leave literal colours alone', () => {
     expect(colors['on-grad']).toBe('#FFFFFF')
-    expect(colors['income-border']).toBe('#C8E6C9')
+    expect(colors['on-grad-2']).toBe('rgba(255,255,255,0.75)')
+  })
+
+  it('take category borders from the theme, so they change in dark mode', () => {
+    for (const name of ['income', 'expense', 'invest', 'repay', 'warning']) {
+      expect(colors[`${name}-border`]({})).toBe(`var(--ds-${name}-border)`)
+    }
   })
 })

@@ -340,7 +340,7 @@ export default function ReportBug() {
         ) : (
           <>
             <div className="card p-0 overflow-hidden">
-              <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+              <div className="px-4 py-5 bg-kosha-card-header border-b border-kosha-border flex items-center justify-between gap-4">
                 <div className="flex flex-col items-start text-left min-w-0">
                   <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Help us fix this</p>
                   <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">

@@ -99,7 +99,7 @@ const PulseTooltip = ({ active, payload, label }) => {
           fontSize: 13, 
           fontWeight: 700, 
           color: pulseColor,
-          background: pulseColor === C.accent ? 'rgba(0,0,0,0.04)' : 'transparent',
+          background: pulseColor === C.accent ? 'rgba(var(--ds-text-rgb),0.06)' : 'transparent',
           padding: pulseColor === C.accent ? '1px 6px' : '0',
           borderRadius: 6,
           marginLeft: pulseColor === C.accent ? -4 : 0,
@@ -234,8 +234,8 @@ export const CashFlowChart = memo(function CashFlowChart({ chartData, totalIncom
         {[['Surplus pulse', C.brandMid], ['Deficit pulse', C.accent]].map(([l, c]) => (
           <div key={l} className="flex items-center gap-1.5">
             <div 
-              className="w-2 h-2 rounded-full border border-black/5" 
-              style={{ background: c, borderColor: c === C.accent ? 'rgba(0,0,0,0.1)' : 'transparent' }} 
+              className="w-2 h-2 rounded-full border" 
+              style={{ background: c, borderColor: c === C.accent ? 'var(--ds-border-strong)' : 'transparent' }} 
             />
             <span className="text-[11px] text-ink-3 font-medium">{l}</span>
           </div>
@@ -408,7 +408,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
 
       <ResponsiveContainer width="100%" height={188}>
         <BarChart data={waterfallRows} margin={{ top: 8, right: 12, left: 12, bottom: 0 }}>
-          <CartesianGrid vertical={false} strokeDasharray="2 3" stroke="rgba(17,19,24,0.10)" />
+          <CartesianGrid vertical={false} strokeDasharray="2 3" stroke={C.chartGrid} />
           <XAxis
             dataKey="name"
             tick={{ fontSize: 11, fill: 'var(--ds-text-3)', fontWeight: 500 }}
@@ -417,7 +417,7 @@ export const CashflowWaterfallChart = memo(function CashflowWaterfallChart({
             interval={0}
           />
           <YAxis hide domain={[-chartLimit, chartLimit]} />
-          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: 'rgba(17,19,24,0.05)' }} />
+          <Tooltip content={<WaterfallTooltip />} cursor={{ fill: C.chartCursor }} />
           <ReferenceLine y={0} stroke="rgba(var(--ds-primary-rgb),0.24)" strokeWidth={1} />
           <Bar dataKey="offset" stackId="waterfall" fill="transparent" isAnimationActive={false} />
           <Bar dataKey="height" stackId="waterfall" radius={[6, 6, 6, 6]} maxBarSize={34}>
@@ -442,9 +442,9 @@ const SurplusTrajectoryTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(var(--ds-primary-rgb),0.14)',
+      boxShadow: 'var(--ds-shadow-md)',
       minWidth: 168,
-      border: '1px solid rgba(187,217,255,0.85)',
+      border: '1px solid var(--ds-border)',
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
         {label}
@@ -731,8 +731,8 @@ const RunwayTooltip = ({ active, payload, label }) => {
       background: 'var(--ds-surface)',
       borderRadius: 12,
       padding: '10px 12px',
-      boxShadow: '0 8px 18px rgba(0,127,255,0.14)',
-      border: '1px solid rgba(187,217,255,0.85)',
+      boxShadow: 'var(--ds-shadow-md)',
+      border: '1px solid var(--ds-border)',
       minWidth: 148,
     }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--ds-text-1)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
@@ -852,7 +852,7 @@ export const RunwayCoverageChart = memo(function RunwayCoverageChart({ flowData,
           />
           <YAxis hide domain={[0, Math.max(6, Math.ceil(maxMonths * 1.15))]} />
           <Tooltip content={<RunwayTooltip />} cursor={{ fill: 'var(--ds-border)' }} />
-          <ReferenceLine y={12} stroke="rgba(0,127,255,0.24)" strokeDasharray="4 4" />
+          <ReferenceLine y={12} stroke="rgba(var(--ds-primary-rgb),0.24)" strokeDasharray="4 4" />
           <Bar dataKey="months" radius={[8, 8, 0, 0]} maxBarSize={34}>
             {scenarioData.map((scenario) => (
               <Cell key={scenario.name} fill={scenario.color} fillOpacity={0.94} />

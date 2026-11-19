@@ -315,7 +315,7 @@ export default function Guide() {
     >
       <div className="page-stack">
         <div className="fade-up fade-up-1 card p-0 overflow-hidden">
-          <div className="px-4 py-5 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-4">
+          <div className="px-4 py-5 bg-kosha-card-header border-b border-kosha-border flex items-center justify-between gap-4">
             <div className="flex flex-col items-start text-left min-w-0">
               <p className="text-[22px] font-bold text-ink tracking-tight leading-tight truncate">Kosha Guide</p>
               <p className="text-[12px] text-ink-3 mt-1 leading-relaxed">
@@ -433,7 +433,7 @@ export default function Guide() {
                   onClick={() => openFeature(card.id)}
                   className="text-left flex flex-col"
                 >
-                  <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
+                  <div className="px-4 py-3.5 bg-kosha-card-header border-b border-kosha-border flex items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className={`text-[11px] px-1.5 py-0.5 rounded-pill font-semibold ${isViewed ? 'bg-income-bg text-income-text' : 'bg-kosha-surface text-ink-3 border border-kosha-border'}`}>

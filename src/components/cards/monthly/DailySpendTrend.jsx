@@ -11,6 +11,7 @@ import {
   Cell,
 } from 'recharts'
 import { fmt } from '../../../lib/utils'
+import { C } from '../../../lib/colors'
 import { dayKey } from '../../../lib/dayKey'
 import Button from '../../ui/Button'
 
@@ -177,7 +178,7 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
               {seriesWithFlags.map((entry, index) => (
                 <Cell
                   key={`cell-${index}`}
-                  fill={entry.isAboveAvg ? '#E8453C' : '#007FFF'}
+                  fill={entry.isAboveAvg ? C.expense : C.brand}
                   fillOpacity={entry.amount > 0 ? 0.78 : 0.15}
                 />
               ))}
@@ -188,11 +189,11 @@ export default memo(function DailySpendTrend({ dailyTotals, year, month, onRevie
 
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: '#007FFF' }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: C.brand }} />
           <span className="text-[11px] text-ink-3">Below avg</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full" style={{ background: '#E8453C' }} />
+          <span className="w-2 h-2 rounded-full" style={{ background: C.expense }} />
           <span className="text-[11px] text-ink-3">Above avg</span>
         </div>
         <div className="flex items-center gap-1.5">

@@ -1045,7 +1045,7 @@ export default function Transactions() {
                     className={spacingClass}
                   >
                     <div className="list-card overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-surface-2 sticky top-0 z-10">
+                      <div className="flex items-center justify-between px-5 py-3 border-b border-kosha-border bg-kosha-card-header sticky top-0 z-10">
                         <span className="text-caption font-semibold text-ink-3 uppercase tracking-wide">
                           {dateLabel(dateKey)}
                         </span>
@@ -1104,7 +1104,7 @@ export default function Transactions() {
         {/* Transaction workspace (Summary) moved to bottom */}
         {showWorkspace && (
           <div className="card p-0 border-0 overflow-hidden">
-            <div className="px-4 pt-3.5 pb-3 bg-kosha-surface-2 border-b border-kosha-border">
+            <div className="px-4 pt-3.5 pb-3 bg-kosha-card-header border-b border-kosha-border">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[15px] font-semibold text-ink">Timeline summary</p>

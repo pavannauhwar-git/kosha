@@ -410,7 +410,7 @@ export default function Settings() {
     >
       <motion.div variants={stagger} initial="hidden" animate="show" className="page-stack">
         <motion.div variants={fadeUp} className="card p-0 overflow-hidden relative border border-kosha-border/50">
-          <div className="p-5 sm:p-6 bg-kosha-surface-2 border-b border-kosha-border relative overflow-hidden">
+          <div className="p-5 sm:p-6 bg-kosha-card-header border-b border-kosha-border relative overflow-hidden">
 
             <div className="flex items-center gap-5 sm:gap-7 relative z-10">
               <div className="relative shrink-0">
@@ -595,7 +595,7 @@ export default function Settings() {
             Reminders
           </p>
           <div className="card overflow-hidden p-0">
-            <div className="px-4 py-3 bg-kosha-surface-2 border-b border-kosha-border flex items-center justify-between gap-2">
+            <div className="px-4 py-3 bg-kosha-card-header border-b border-kosha-border flex items-center justify-between gap-2">
               <div>
                 <p className="text-[13px] font-semibold text-ink">Reminder engine</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">Alerts appear while Kosha is open on this device</p>
@@ -730,7 +730,7 @@ export default function Settings() {
             Invite to Link Wallet
           </p>
           <div className="card overflow-hidden p-0">
-            <div className="px-4 py-3.5 bg-kosha-surface-2 border-b border-kosha-border flex items-start justify-between gap-3">
+            <div className="px-4 py-3.5 bg-kosha-card-header border-b border-kosha-border flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-ink">Generate link</p>
                 <p className="text-[11px] text-ink-3 mt-0.5">Invite others to sync their wallet with yours. Your partner will see all your transactions, bills and loans, and you&apos;ll see theirs. Links work once and expire after 7 days.</p>

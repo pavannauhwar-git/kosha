@@ -127,7 +127,10 @@ const DashboardHeroCard = memo(function DashboardHeroCard({
 
       {/* Main amount — large; paise rendered at 60% scale for premium hierarchy */}
       <div>
-        <p className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}>
+        <p
+          className={`${mainValueClass} font-bold text-white leading-[0.95] tracking-tight tabular-nums max-w-full whitespace-normal [overflow-wrap:anywhere]`}
+          style={mainValueNumber < 0 ? { color: C.heroNegative } : undefined}
+        >
           {mainParts.main}
           {mainParts.decimal && (
             <span className="text-[0.6em] font-semibold opacity-75 align-baseline ml-[0.04em]">

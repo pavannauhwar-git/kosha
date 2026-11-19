@@ -45,6 +45,8 @@
   --ds-surface-container: #E9EEF6;
   --ds-surface-container-high: #DEE3EB;
   --ds-surface-container-highest: #D3D8E0;
+  /* Header strip at the top of a card; in light mode it must not match the page. */
+  --ds-card-header: var(--ds-surface);
 
   /* ── Text / Ink ─────────────────────── */
   --ds-text: #1F1F1F;
@@ -85,13 +87,15 @@
   --ds-warning: #9A5300;
   --ds-warning-bg: #FEEFC3;
   --ds-warning-border: #FDE293;
+  --ds-warning-text: #9A5300;
   --ds-danger: #C5221F;
+  --ds-on-danger: #FFFFFF;
   --ds-danger-bg: #FCE8E6;
   --ds-success: #137333;
   --ds-success-bg: #E6F4EA;
 
   /* ── Shadows (Refined Subtle Depth) ── */
-  --ds-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03), 0 3px 8px -1px rgba(0, 0, 0, 0.04);
+  --ds-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06), 0 2px 6px -1px rgba(16, 24, 40, 0.08);
   --ds-shadow-md: 0 4px 12px -2px rgba(0, 0, 0, 0.05), 0 12px 32px -4px rgba(0, 0, 0, 0.04);
   --ds-shadow-lg: 0 8px 24px -4px rgba(0, 0, 0, 0.06), 0 24px 64px -8px rgba(0, 0, 0, 0.06);
   --ds-shadow-xl: 0 12px 32px -4px rgba(0, 0, 0, 0.08), 0 48px 100px -12px rgba(0, 0, 0, 0.10);
@@ -227,6 +231,7 @@
   --ds-surface-container: #131314;
   --ds-surface-container-high: #282A2D;
   --ds-surface-container-highest: #333538;
+  --ds-card-header: var(--ds-surface-bright);
 
   --ds-text: #E3E3E3;
   --ds-text-secondary: #C4C7C5;
@@ -260,7 +265,9 @@
   --ds-warning: #FDD663;
   --ds-warning-bg: #272319;
   --ds-warning-border: #443c24;
+  --ds-warning-text: #FDD663;
   --ds-danger: #F28B82;
+  --ds-on-danger: #601410;
   --ds-danger-bg: rgba(242, 139, 130, 0.10);
   --ds-success: #81C995;
   --ds-success-bg: rgba(129, 201, 149, 0.10);
@@ -369,7 +376,7 @@ body {
 
 /* ── Selection ──────────────────────────────────────────────────────── */
 ::selection {
-  background-color: rgba(0, 127, 255, 0.18);
+  background-color: rgba(var(--ds-primary-rgb), 0.18);
   color: var(--ds-text);
 }
 
@@ -566,7 +573,7 @@ a,
     --c-income: var(--ds-income);
     --c-invest-text: var(--ds-invest-text);
     --c-expense: var(--ds-expense);
-    --c-expense-bright: #FF5A52;
+    --c-expense-bright: var(--ds-expense-text);
     --c-warning: var(--ds-warning);
 
     --c-ink-muted: var(--ds-text-tertiary);
@@ -578,6 +585,7 @@ a,
     --c-hero-dimmer: rgba(255, 255, 255, 0.45);
     --c-hero-divider: rgba(255, 255, 255, 0.12);
     --c-hero-stat-bg: rgba(255, 255, 255, 0.10);
+    --c-hero-negative: #FFB3AF;
 
     --c-shimmer-1: var(--ds-shimmer-1);
     --c-shimmer-2: var(--ds-shimmer-2);
@@ -599,7 +607,7 @@ a,
 
   /* -- Hero card — brand blue gradient ────────────────────────────── */
   .card-hero {
-    background: linear-gradient(135deg, #0A92FF 0%, #004ba0 100%);
+    background: linear-gradient(135deg, var(--ds-primary) 0%, var(--ds-primary-dark) 100%);
     border-radius: var(--md-sys-shape-xl); /* Symmetrical M3 Extra Large (28px) rounded corners */
     border: 1px solid rgba(255, 255, 255, 0.25);
     box-shadow:
@@ -635,7 +643,7 @@ a,
 
   .dark .card-hero::before {
     background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.08) 0%, transparent 50%),
-      radial-gradient(circle at bottom left, rgba(0, 127, 255, 0.10) 0%, transparent 60%);
+      radial-gradient(circle at bottom left, rgba(var(--ds-primary-rgb), 0.10) 0%, transparent 60%);
     mix-blend-mode: overlay;
   }
 
@@ -715,6 +723,7 @@ a,
 
   .card-inset {
     @apply bg-kosha-surface-2 rounded-card;
+    border: 1px solid var(--ds-border);
   }
 
   .card-urgent {
@@ -843,7 +852,7 @@ a,
   /* -- List card ───────────────────────────────────────────────────── */
   .list-card {
     @apply bg-kosha-surface rounded-card shadow-card overflow-hidden;
-    border: none;
+    border: 1px solid var(--ds-border);
   }
 
   .list-row {
@@ -1221,7 +1230,7 @@ a,
 
   .input:focus {
     border-color: var(--ds-primary);
-    box-shadow: 0 0 0 3px rgba(0, 127, 255, 0.12), 0 4px 12px rgba(17, 19, 24, 0.06);
+    box-shadow: 0 0 0 3px rgba(var(--ds-primary-rgb), 0.12), 0 4px 12px rgba(17, 19, 24, 0.06);
   }
 
   .dark .input:focus {

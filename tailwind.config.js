@@ -27,6 +27,7 @@ export default {
         'kosha-bg-2':          'var(--ds-surface-container)',
         'kosha-surface':       'var(--ds-surface)',
         'kosha-surface-2':     'var(--ds-surface-bright)',
+        'kosha-card-header':   'var(--ds-card-header)',
         'kosha-border':        'var(--ds-border)',
         'kosha-border-strong': 'var(--ds-border-strong)',
 
@@ -45,31 +46,31 @@ export default {
         'income':        'var(--ds-income)',
         'income-bg':     'var(--ds-income-bg)',
         'income-text':   'var(--ds-income-text)',
-        'income-border': '#C8E6C9',
+        'income-border': 'var(--ds-income-border)',
 
         /* ── Expense — Coral ───────────────────────────────────────── */
         'expense':        'var(--ds-expense)',
         'expense-bg':     'var(--ds-expense-bg)',
         'expense-text':   'var(--ds-expense-text)',
-        'expense-border': '#FFCDD2',
+        'expense-border': 'var(--ds-expense-border)',
 
         /* ── Investment — Indigo ───────────────────────────────────── */
         'invest':        'var(--ds-invest)',
         'invest-bg':     'var(--ds-invest-bg)',
         'invest-text':   'var(--ds-invest-text)',
-        'invest-border': '#C5CAE9',
+        'invest-border': 'var(--ds-invest-border)',
 
         /* ── Repayment / Bills — Amber ─────────────────────────────── */
         'repay':        'var(--ds-repay)',
         'repay-bg':     'var(--ds-repay-bg)',
         'repay-text':   'var(--ds-repay-text)',
-        'repay-border': '#FFF9C4',
+        'repay-border': 'var(--ds-repay-border)',
 
         /* ── Warning ───────────────────────────────────────────────── */
         'warning':        'var(--ds-warning)',
         'warning-bg':     'var(--ds-warning-bg)',
-        'warning-border': '#FFE0B2',
-        'warning-text':   'var(--ds-warning)',
+        'warning-border': 'var(--ds-warning-border)',
+        'warning-text':   'var(--ds-warning-text)',
 
         /* ── Ink / Text ────────────────────────────────────────────── */
         'ink':   'var(--ds-text)',
@@ -122,8 +123,8 @@ export default {
         'apple-card': 'var(--ds-shadow-xl)',
         'fab':        'var(--ds-shadow-fab)',
         'focus':      'var(--ds-focus-ring)',
-        'urgent':     '0 2px 8px rgba(232,69,60,0.12)',
-        'warn':       '0 2px 8px rgba(249,168,37,0.12)',
+        'urgent':     '0 2px 8px color-mix(in srgb, var(--ds-danger) 12%, transparent)',
+        'warn':       '0 2px 8px color-mix(in srgb, var(--ds-warning) 12%, transparent)',
         'glass':      '0 8px 32px rgba(17,19,24,0.06), inset 0 0.5px 0 rgba(255,255,255,0.6)',
         'hero-card':  'var(--ds-shadow-hero)',
       },

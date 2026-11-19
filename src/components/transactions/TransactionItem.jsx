@@ -256,8 +256,8 @@ function TransactionItem({
 
   const actionOpacity = useTransform(x, [0, -30, -PEEK_X], [0, 0.5, 1])
   const actionScale = useTransform(x, [-PEEK_X * 0.4, -PEEK_X], [0.92, 1])
-  const deleteBg = 'rgba(232,69,60,0.96)'
-  const deleteFg = 'rgba(255,255,255,1)'
+  const deleteBg = 'var(--ds-danger)'
+  const deleteFg = 'var(--ds-on-danger)'
 
   const [deleting, setDeleting] = useState(false)
   const [hidden, setHidden] = useState(false)
